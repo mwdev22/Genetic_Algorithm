@@ -2,14 +2,23 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
 func main() {
 	fmt.Println("Starting app...")
 
-	http.HandleFunc("/", index)
-	http.HandleFunc("/calculate", calculate)
+	// router
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", index)
+	mux.HandleFunc("/calculate", calculate)
+
+	err := http.ListenAndServe(":8080", mux)
+	if err != nil {
+		log.Fatalf("failed to start the server")
+	}
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
