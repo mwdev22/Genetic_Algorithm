@@ -4,73 +4,56 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Implementacja algorytmu genetycznego</title>
-    <script>
-        async function calculate() {
-            const a = parseFloat(document.getElementById("a").value);
-            const b = parseFloat(document.getElementById("b").value);
-            const d = parseFloat(document.getElementById("d").value);
-            const N = parseInt(document.getElementById("N").value);
+    <title>Algorytm Genetyczny</title>
+    <link rel="stylesheet" href="/static/style.css">
 
-            const requestData = { a: a, b: b, d: d, N: N };
-
-            const response = await fetch("/calculate", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(requestData)
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                
-                // czyszcenie tabeli w przypadku poprawnej odpowiedzi serwera
-                const tableBody = document.getElementById("table-body");
-                tableBody.innerHTML = ""; 
-
-                data.population.forEach(individual => {
-                    const row = `<tr>
-                                    <td>${individual.x_real.toFixed(4)}</td>
-                                    <td>${individual.x_int}</td>
-                                    <td>${individual.bin}</td>
-                                    <td>${individual.fx.toFixed(6)}</td>
-                                 </tr>`;
-                    tableBody.innerHTML += row;
-                });
-            } else {
-                console.error("Failed to fetch calculation results.");
-            }
-        }
-    </script>
+    <script src="/static/main.js"></script>
 </head>
 <body>
 
-    <h1>Genetic Algorithm Table</h1>
-
+    <h1>Tabela algorytmu genetycznego</h1>
     <div>
-        <label for="a">a:</label>
-        <input type="number" id="a" value="-4" step="0.001">
-        <label for="b">b:</label>
-        <input type="number" id="b" value="12" step="0.001">
-        <label for="d">Precision (d):</label>
-        <input type="number" id="d" value="0.001" step="0.0001">
-        <label for="N">Population Size (N):</label>
-        <input type="number" id="N" value="10" step="1">
-        <button onclick="calculate()">Calculate</button>
+        <div class="input-container">
+            <label for="a">a:</label>
+            <input type="number" id="a" value="-4" step="0.001">
+
+            <label for="b">b:</label>
+            <input type="number" id="b" value="12" step="0.001">
+
+            <label for="precision">Dokładność (d):</label>
+            <select id="precision">
+                <option value="0.1">0.1</option>
+                <option value="0.01">0.01</option>
+                <option value="0.001" selected>0.001</option>
+            </select>
+
+            <label for="N">Rozmiar Populacji (N):</label>
+            <input type="number" id="N" value="10" step="1">
+
+            <button onclick="calculate()">Calculate</button>
+        </div>
+        <div class="result-container">
+            <span>ID osobnika z wynikiem maksymalnym:</span>
+            <h1 id="res-id"></h1>
+            <span>Wartość:</span>
+            <h1 id="res-val"></h1>
+        </div>
     </div>
 
-    <table border="1">
+    <table>
         <thead>
             <tr>
+                <th>ID</th>
                 <th>X Real</th>
                 <th>X Int</th>
-                <th>Binary</th>
-                <th>Fitness (F(x))</th>
+                <th>X Bin</th>
+                <th>X Int</th>
+                <th>X Real</th>
+                <th>f(x)</th>
             </tr>
         </thead>
         <tbody id="table-body">
-            <!-- tutaj wprowadzone wiersze tabeli po odpowiedzi -->
+            <!-- tabela zostaje dynamicznie wypełniona przez formularz -->
         </tbody>
     </table>
 
