@@ -12,7 +12,7 @@
 <body>
 
     <h1>Tabela algorytmu genetycznego</h1>
-    <div>
+    <div class="panel">
         <div class="input-container">
             <label for="a">a:</label>
             <input type="number" id="a" value="-4" step="0.001">
@@ -30,13 +30,13 @@
             <label for="N">Rozmiar Populacji (N):</label>
             <input type="number" id="N" value="10" step="1">
 
-            <button onclick="calculate()">Calculate</button>
+            <button onclick="calculate()">START</button>
+            
         </div>
         <div class="result-container">
-            <span>ID osobnika z wynikiem maksymalnym:</span>
-            <h1 id="res-id"></h1>
-            <span>Wartość:</span>
-            <h1 id="res-val"></h1>
+            <h3>ID osobnika z wynikiem maksymalnym: <span id="res-id"></span></h3>
+            <h3>Wartość f(x): <span id="res-val"></span></h3>
+            <h3>Liczba bitów: <span id="bit-count"></span></h3>
         </div>
     </div>
 

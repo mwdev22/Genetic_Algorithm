@@ -7,30 +7,54 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 )
 
-var l int // liczba bitów
+var l int              // liczba bitów
+var production = false // true w przy udostępnianiu na serwerze
 
 func main() {
 	fmt.Println("Starting app...")
+	if os.Getenv("MODE") == "PRODUCTION" {
+		production = true
+	}
 
 	// router
 	mux := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("./static"))
+	var staticPath string
+	if production {
+		staticPath = "/home/mwdev22/ins/static"
+	} else {
+		staticPath = "./static"
+	}
+	fs := http.FileServer(http.Dir(staticPath))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/calculate", calculate)
 
-	err := http.ListenAndServe(":8080", mux)
+	var err error
+	addr := os.Getenv("ADDR")
+	if addr != "" {
+		// wymaganie serwisu hostingowego do nasłuchiwania na ipv6
+		err = http.ListenAndServe(addr, mux)
+	} else {
+		err = http.ListenAndServe(":8080", restrictPaths(mux.ServeHTTP))
+	}
 	if err != nil {
 		log.Fatalf("nie udało się uruchomić serwera: %v", err)
 	}
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
+	var path string
+	if production {
+		path = "/home/mwdev22/ins/index.html"
+	} else {
+		path = "./index.html"
+	}
+	http.ServeFile(w, r, path)
 }
 
 // funkcja oceny

@@ -12,16 +12,26 @@ h1 {
     color: #000000;
 }
 
-.input-container, .result-container {
+.panel{
     display: flex;
-    justify-content: space-around;
-    align-items: center;
+    flex-direction: column;
     margin: 20px auto;
     padding: 15px;
     width: 80%;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-container, .result-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+}
+.result-container {
+    flex-direction: row;
 }
 
 .input-container label, 
@@ -54,26 +64,29 @@ h1 {
     background-color: #0be650;
 }
 
-/* Result container styling */
 .result-container {
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-left: 40px;
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    width: 80%; 
 }
 
-.result-container h1 {
-    margin: 5px 0;
-    color: #d9534f;
-    font-size: 1.5rem;
+.result-container h3 {
+    margin: 0 10px;
+    font-size: 1.2rem;
+    color: #333;
 }
 
 .result-container span {
     color: #333;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.5rem;
 }
 
-/* Table styling */
 table {
     width: 80%;
     margin: 20px auto;
@@ -102,4 +115,12 @@ td {
 
 tr:hover {
     background-color: #f1f1f1;
+}
+
+.highlighted {
+    font-weight: bold;
+}
+
+.highlighted td {
+    background-color: #fbec1c; 
 }

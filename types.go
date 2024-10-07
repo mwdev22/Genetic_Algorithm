@@ -1,5 +1,7 @@
 package main
 
+import "net/http"
+
 // struktura potrzebna do zdekodowania danych od użytkownika
 type CalculationPayload struct {
 	A float64 `json:"a"`
@@ -24,4 +26,18 @@ type Result struct {
 	Population []Individual `json:"population"`
 	BestInd    Individual   `json:"best_ind"` // najlepiej dopasowany osobnik
 	L          int          `json:"L"`
+}
+
+// restrykcja ścieżek
+func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		allowedPaths := []string{"/", "/calculate", "/static/"}
+		for _, path := range allowedPaths {
+			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		http.NotFound(w, r)
+	}
 }
