@@ -116,6 +116,18 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func selection(x float64) {
+
+}
+
+func mutation(x string, genIdxs []int) {
+
+}
+
+func crossover(x, y string, pc int) {
+
+}
+
 // konwersje liczb
 func realToInt(x, a, b float64) int {
 	return int((x - a) / (b - a) * (math.Pow(2, float64(l)) - 1))
