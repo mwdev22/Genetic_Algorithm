@@ -12,12 +12,18 @@ type CalculationPayload struct {
 type SelectionPayload struct {
 	Population []Individual `json:"pop"`
 	GSum       float64      `json:"g_sum"`
+	A          float64      `json:"a"`
+	B          float64      `json:"b"`
 }
 
 type Result struct {
 	L          int          `json:"L"`
 	Population []Individual `json:"population"`
 	GSum       float64      `json:"g_sum"`
+}
+
+type SelectionResult struct {
+	Population []Individual `json:"population"`
 }
 
 type Individual struct {

@@ -88,7 +88,7 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	var result Result
 	result.L = l
 	for i := 1; i <= N; i++ {
-		xReal := a + rand.Float64()*(b-a)
+		xReal := math.Round((a+rand.Float64()*(b-a))/d) * d
 		xInt := realToInt(xReal, a, b)
 		bin := intToBin(xInt)
 		fx := evalFunc(xReal)
@@ -122,13 +122,41 @@ func selection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
 		return
 	}
-	var indinviduals = payload.Population
 
-	for indiv := range indinviduals {
-		// q :=
+	var individuals []Individual = payload.Population
+
+	var pSum float64 = 0
+
+	for i := 0; i < len(individuals); i++ {
+		indiv := &individuals[i]
+		indiv.P = indiv.Gx / payload.GSum
+		pSum += indiv.P
+		indiv.Q = pSum
 	}
 
-	err = json.NewEncoder(w).Encode(payload)
+	for i := 0; i < len(individuals); i++ {
+		indiv := &individuals[i]
+		indiv.R = rand.Float64()
+		for j := 0; j < len(individuals); j++ {
+			var qLast float64
+			if j == 0 {
+				qLast = 0
+			} else {
+				qLast = individuals[j-1].Q
+			}
+			if indiv.R > qLast && indiv.R < individuals[j].Q {
+				indiv.XSel = individuals[j].XReal
+				fmt.Println(payload.A, payload.B)
+				indiv.XSelBin = intToBin(realToInt(indiv.XReal, payload.A, payload.B))
+			}
+		}
+	}
+
+	result := SelectionResult{
+		Population: individuals,
+	}
+
+	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
 	}
@@ -148,7 +176,7 @@ func g(xReal, a, b, d float64) float64 {
 }
 
 func minF(a, b, d float64) float64 {
-	min := evalFunc(a)
+	var min float64 = evalFunc(a)
 	x := a
 	for x <= b {
 		fx := evalFunc(x)

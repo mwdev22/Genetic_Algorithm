@@ -1,3 +1,5 @@
+let prec = 2
+
 async function calculate() {
     
     // dane z formularza do obliczeń
@@ -6,6 +8,7 @@ async function calculate() {
     const d = parseFloat(document.getElementById("precision").value); 
     const N = parseInt(document.getElementById("N").value);
 
+    prec = d.toString().length - 2
     const requestData = { a: a, b: b, d: d, N: N };
 
     // ekran ładowania
@@ -33,14 +36,19 @@ async function calculate() {
             data.population.forEach((individual) => {
                 const row = `<tr id="${individual.id}">
                                 <td>${individual.id}</td>
-                                <td>${individual.x_real.toFixed(4)}</td>
-                                <td>${individual.fx.toFixed(2)}</td>
-                                <td>${individual.gx.toFixed(2)}</td>
+                                <td>${individual.x_real.toFixed(prec)}</td>
+                                <td>${individual.fx.toFixed(prec)}</td>
+                                <td>${individual.gx.toFixed(prec)}</td>
+                                <td>trwa selekcja...</td>
+                                <td>trwa selekcja...</td>
+                                <td>trwa selekcja...</td>
+                                <td>trwa selekcja...</td>
+                                <td>trwa selekcja...</td>
                              </tr>`;
                 tableBody.innerHTML += row;
             });
 
-            selection(data.population, data.g_sum);
+            selection(data.population, data.g_sum, a, b);
 
             
 
@@ -54,9 +62,9 @@ async function calculate() {
     }
 }
 
-async function selection(pop, g_sum) {
-    const requestData = { pop: pop, g_sum: g_sum };
-    console.log(requestData)
+async function selection(pop, g_sum, a, b) {
+    const requestData = { pop: pop, g_sum: g_sum, a: a, b: b };
+    console.log(requestData);
     try {
         const response = await fetch("/selection", {
             method: "POST",
@@ -65,17 +73,40 @@ async function selection(pop, g_sum) {
             },
             body: JSON.stringify(requestData)
         });
+        
         if (response.ok) {
             const data = await response.json();
-            console.log(data)
+            console.log(data);
+
+            data.population.forEach((individual) => {
+                const row = document.getElementById(individual.id);
+                console.log(individual)
+                if (row) {
+                    console.log(row.cells)
+                    row.cells[0].textContent = individual.id;
+                    row.cells[1].textContent = individual.x_real.toFixed(prec);
+                    row.cells[2].textContent = individual.fx.toFixed(prec);
+                    row.cells[3].textContent = individual.gx.toFixed(prec);
+                    row.cells[4].textContent = individual.p.toFixed(prec);
+                    row.cells[5].textContent = individual.q.toFixed(prec);
+                    row.cells[6].textContent = individual.r.toFixed(prec);
+                    if (individual.x_sel) {
+                        row.cells[7].textContent = individual.x_sel.toFixed(prec);
+                        row.cells[8].textContent = individual.x_sel_bin;
+                    } else {
+                        row.cells[7].textContent = "-";
+                        row.cells[8].textContent = "-";
+                    }
+                }
+            });
         } else {
-            console.log(response)
+            console.log("Błąd przy pobieraniu danych z /selection");
         }
-    }
-    catch (error){
-        console.error(error)
+    } catch (error) {
+        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
     }
 }
+
 
 async function mutation(pop, g_sum) {
     const requestData = {pop: pop, g_sum: g_sum};
