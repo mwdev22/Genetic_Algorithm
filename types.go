@@ -2,7 +2,6 @@ package main
 
 import "net/http"
 
-// struktura potrzebna do zdekodowania danych od użytkownika
 type CalculationPayload struct {
 	A float64 `json:"a"`
 	B float64 `json:"b"`
@@ -10,28 +9,45 @@ type CalculationPayload struct {
 	N int     `json:"N"`
 }
 
-// struktura reprezentująca osobnika
-type Individual struct {
-	ID       int     `json:"id"`
-	XReal    float64 `json:"x_real"`
-	XInt     int     `json:"x_int"`
-	Bin      string  `json:"bin"`
-	XNewInt  int     `json:"x_new_int"`
-	XNewReal float64 `json:"x_new_real"`
-	Fx       float64 `json:"fx"`
+type SelectionPayload struct {
+	Population []Individual `json:"pop"`
+	GSum       float64      `json:"g_sum"`
 }
 
-// lista osobników oraz ich parametrów
 type Result struct {
-	Population []Individual `json:"population"`
-	BestInd    Individual   `json:"best_ind"` // najlepiej dopasowany osobnik
 	L          int          `json:"L"`
+	Population []Individual `json:"population"`
+	GSum       float64      `json:"g_sum"`
+}
+
+type Individual struct {
+	ID      int     `json:"id"`
+	XReal   float64 `json:"x_real"`
+	XInt    int     `json:"x_int,omitempty"`
+	Bin     string  `json:"bin"`
+	Fx      float64 `json:"fx"`
+	Gx      float64 `json:"gx"`
+	P       float64 `json:"p,omitempty"`
+	Q       float64 `json:"q"`
+	R       float64 `json:"r"`
+	XSel    float64 `json:"x_sel"`
+	XSelBin string  `json:"x_sel_bin"`
+}
+
+type MutationPayload struct {
+	Offspring    []Individual `json:"offspring"`
+	MutationRate float64      `json:"mutation_rate"`
+}
+
+type CrossoverPayload struct {
+	SelectedPopulation []Individual `json:"selected_population"`
+	Pc                 int          `json:"pc"`
 }
 
 // restrykcja ścieżek
 func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		allowedPaths := []string{"/", "/calculate", "/static/"}
+		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "mutation", "crossover"}
 		for _, path := range allowedPaths {
 			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
 				next.ServeHTTP(w, r)

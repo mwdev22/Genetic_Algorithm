@@ -33,6 +33,7 @@ func main() {
 
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/calculate", calculate)
+	mux.HandleFunc("/selection", selection)
 
 	var err error
 	addr := os.Getenv("ADDR")
@@ -82,32 +83,30 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	// kalkulacja liczby bitów
 	l = int(math.Ceil(math.Log2((b - a) / d)))
 
+	var gSum float64 = 0
+
 	var result Result
 	result.L = l
 	for i := 1; i <= N; i++ {
 		xReal := a + rand.Float64()*(b-a)
 		xInt := realToInt(xReal, a, b)
 		bin := intToBin(xInt)
-		xNewInt := binToInt(bin)
-		xNewReal := intToReal(xNewInt, a, b)
+		fx := evalFunc(xReal)
+		gx := g(xReal, a, b, d)
 
-		fx := evalFunc(xNewReal)
+		gSum += gx
 
 		indiv := Individual{
-			ID:       i,
-			XReal:    xReal,
-			XInt:     xInt,
-			Bin:      bin,
-			XNewInt:  xNewInt,
-			XNewReal: xNewReal,
-			Fx:       fx,
+			ID:    i,
+			XReal: xReal,
+			Bin:   bin,
+			Fx:    fx,
+			Gx:    gx,
 		}
 		result.Population = append(result.Population, indiv)
-		if fx > result.BestInd.Fx {
-			result.BestInd = indiv
-		}
 
 	}
+	result.GSum = gSum
 
 	// formatowanie odpowiedzi do formatu JSON
 	err = json.NewEncoder(w).Encode(result)
@@ -116,7 +115,23 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func selection(x float64) {
+func selection(w http.ResponseWriter, r *http.Request) {
+	var payload SelectionPayload
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
+		return
+	}
+	var indinviduals = payload.Population
+
+	for indiv := range indinviduals {
+		// q :=
+	}
+
+	err = json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	}
 
 }
 
@@ -126,6 +141,23 @@ func mutation(x string, genIdxs []int) {
 
 func crossover(x, y string, pc int) {
 
+}
+
+func g(xReal, a, b, d float64) float64 {
+	return evalFunc(xReal) - minF(a, b, d) + d
+}
+
+func minF(a, b, d float64) float64 {
+	min := evalFunc(a)
+	x := a
+	for x <= b {
+		fx := evalFunc(x)
+		if fx < min {
+			min = fx
+		}
+		x += d
+	}
+	return min
 }
 
 // konwersje liczb
