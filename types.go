@@ -16,6 +16,11 @@ type SelectionPayload struct {
 	B          float64      `json:"b"`
 }
 
+type CrossoverPayload struct {
+	Population []Individual `json:"pop"`
+	Pk         float64      `json:"pk"`
+}
+
 type Result struct {
 	L          int          `json:"L"`
 	Population []Individual `json:"population"`
@@ -38,6 +43,7 @@ type Individual struct {
 	R       float64 `json:"r"`
 	XSel    float64 `json:"x_sel"`
 	XSelBin string  `json:"x_sel_bin"`
+	Parent  any     `json:"parent"`
 }
 
 type MutationPayload struct {
@@ -45,15 +51,10 @@ type MutationPayload struct {
 	MutationRate float64      `json:"mutation_rate"`
 }
 
-type CrossoverPayload struct {
-	SelectedPopulation []Individual `json:"selected_population"`
-	Pc                 int          `json:"pc"`
-}
-
 // restrykcja ścieżek
 func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "mutation", "crossover"}
+		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "/mutation", "/crossover"}
 		for _, path := range allowedPaths {
 			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
 				next.ServeHTTP(w, r)

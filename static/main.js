@@ -7,6 +7,8 @@ async function calculate() {
     const b = parseFloat(document.getElementById("b").value);
     const d = parseFloat(document.getElementById("precision").value); 
     const N = parseInt(document.getElementById("N").value);
+    const pk = parseFloat(document.getElementById("pk").value);
+
 
     prec = d.toString().length - 2
     const requestData = { a: a, b: b, d: d, N: N };
@@ -14,6 +16,7 @@ async function calculate() {
     // ekran ładowania
     const tableBody = document.getElementById("table-body");
     tableBody.innerHTML = "<tr><td colspan='7'>Ładowanie...</td></tr>"; 
+
 
     try {
         // pobieranie danych z backendu
@@ -48,7 +51,9 @@ async function calculate() {
                 tableBody.innerHTML += row;
             });
 
-            selection(data.population, data.g_sum, a, b);
+            let pop = await selection(data.population, data.g_sum, a, b);
+            console.log(pop)
+            if (pop != data.population) { crossover(pop, pk); }
 
             
 
@@ -73,16 +78,14 @@ async function selection(pop, g_sum, a, b) {
             },
             body: JSON.stringify(requestData)
         });
+
         
         if (response.ok) {
             const data = await response.json();
-            console.log(data);
 
             data.population.forEach((individual) => {
                 const row = document.getElementById(individual.id);
-                console.log(individual)
                 if (row) {
-                    console.log(row.cells)
                     row.cells[0].textContent = individual.id;
                     row.cells[1].textContent = individual.x_real.toFixed(prec);
                     row.cells[2].textContent = individual.fx.toFixed(prec);
@@ -99,14 +102,28 @@ async function selection(pop, g_sum, a, b) {
                     }
                 }
             });
+            return data.population;
         } else {
             console.log("Błąd przy pobieraniu danych z /selection");
+            return pop;
         }
     } catch (error) {
         console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
+        return pop;
     }
 }
 
+async function crossover(pop, pk) {
+    const requestData = { pop: pop, pk: pk };
+    console.log(requestData)
+    const response = await fetch("/crossover", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+    });
+}
 
 async function mutation(pop, g_sum) {
     const requestData = {pop: pop, g_sum: g_sum};
@@ -119,13 +136,3 @@ async function mutation(pop, g_sum) {
     });
 }
 
-async function crossover(pop, g_sum) {
-    const requestData = {pop: pop, g_sum: g_sum};
-    const response = await fetch("/selection", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    });
-}

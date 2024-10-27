@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"time"
 )
 
 var l int              // liczba bitów
@@ -18,6 +19,7 @@ func main() {
 	if os.Getenv("MODE") == "PRODUCTION" {
 		production = true
 	}
+	rand.Seed(time.Now().UnixNano())
 
 	// router
 	mux := http.NewServeMux()
@@ -34,6 +36,7 @@ func main() {
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/calculate", calculate)
 	mux.HandleFunc("/selection", selection)
+	mux.HandleFunc("/crossover", crossover)
 
 	var err error
 	addr := os.Getenv("ADDR")
@@ -146,7 +149,6 @@ func selection(w http.ResponseWriter, r *http.Request) {
 			}
 			if indiv.R > qLast && indiv.R < individuals[j].Q {
 				indiv.XSel = individuals[j].XReal
-				fmt.Println(payload.A, payload.B)
 				indiv.XSelBin = intToBin(realToInt(indiv.XReal, payload.A, payload.B))
 			}
 		}
@@ -163,11 +165,34 @@ func selection(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func mutation(x string, genIdxs []int) {
+func crossover(w http.ResponseWriter, r *http.Request) {
+
+	var payload CrossoverPayload
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var individuals []Individual = payload.Population
+	fmt.Println(payload)
+
+	for i := 0; i < len(individuals); i++ {
+		ind := &individuals[i]
+		r := rand.Float64()
+		if r <= payload.Pk {
+			ind.Parent = ind.XSel
+		} else {
+			ind.Parent = "-"
+			continue
+		}
+		pc := rand.Intn(len(ind.XSelBin)-1) + 1
+		fmt.Println(pc)
+	}
 
 }
 
-func crossover(x, y string, pc int) {
+func mutation(w http.ResponseWriter, r *http.Request) {
 
 }
 
