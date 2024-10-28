@@ -147,9 +147,9 @@ func selection(w http.ResponseWriter, r *http.Request) {
 			} else {
 				qLast = individuals[j-1].Q
 			}
-			if indiv.R > qLast && indiv.R < individuals[j].Q {
+			if indiv.R > qLast && indiv.R < individuals[j].Q && j != i {
 				indiv.XSel = individuals[j].XReal
-				indiv.XSelBin = intToBin(realToInt(indiv.XReal, payload.A, payload.B))
+				indiv.XSelBin = intToBin(realToInt(indiv.XSel, payload.A, payload.B))
 			}
 		}
 	}
@@ -181,13 +181,15 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 		ind := &individuals[i]
 		r := rand.Float64()
 		if r <= payload.Pk {
-			ind.Parent = ind.XSel
+			ind.Parent = ind.XSelBin
 		} else {
 			ind.Parent = "-"
 			continue
 		}
 		pc := rand.Intn(len(ind.XSelBin)-1) + 1
 		fmt.Println(pc)
+		child := ind.Bin[:pc] + ind.Parent[pc:]
+		fmt.Println(child)
 	}
 
 }

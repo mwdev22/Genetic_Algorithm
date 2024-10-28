@@ -43,7 +43,7 @@ type Individual struct {
 	R       float64 `json:"r"`
 	XSel    float64 `json:"x_sel"`
 	XSelBin string  `json:"x_sel_bin"`
-	Parent  any     `json:"parent"`
+	Parent  string  `json:"parent"`
 }
 
 type MutationPayload struct {
