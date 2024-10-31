@@ -2,6 +2,7 @@ package main
 
 import "net/http"
 
+// payloads
 type CalculationPayload struct {
 	A float64 `json:"a"`
 	B float64 `json:"b"`
@@ -21,7 +22,13 @@ type CrossoverPayload struct {
 	Pk         float64      `json:"pk"`
 }
 
-type Result struct {
+type MutationPayload struct {
+	Offspring    []Individual `json:"offspring"`
+	MutationRate float64      `json:"mutation_rate"`
+}
+
+// responses
+type CalculationResult struct {
 	L          int          `json:"L"`
 	Population []Individual `json:"population"`
 	GSum       float64      `json:"g_sum"`
@@ -29,6 +36,12 @@ type Result struct {
 
 type SelectionResult struct {
 	Population []Individual `json:"population"`
+}
+
+type CrossoverResult struct {
+	Population []Individual `json:"population"`
+	BackupId   int          `json:"backup_id"`
+	BackupPc   int          `json:"backup_pc"`
 }
 
 type Individual struct {
@@ -44,11 +57,9 @@ type Individual struct {
 	XSel    float64 `json:"x_sel"`
 	XSelBin string  `json:"x_sel_bin"`
 	Parent  string  `json:"parent"`
-}
-
-type MutationPayload struct {
-	Offspring    []Individual `json:"offspring"`
-	MutationRate float64      `json:"mutation_rate"`
+	Pc      int     `json:"pc"`
+	Child   string  `json:"child"`
+	NewGen  string  `json:"new_gen"`
 }
 
 // restrykcja ścieżek

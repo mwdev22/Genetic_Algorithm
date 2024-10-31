@@ -17,6 +17,9 @@ async function calculate() {
     const tableBody = document.getElementById("table-body");
     tableBody.innerHTML = "<tr><td colspan='7'>Ładowanie...</td></tr>"; 
 
+    let expl = document.getElementById('expl')
+    expl.innerText = ``
+
 
     try {
         // pobieranie danych z backendu
@@ -34,6 +37,9 @@ async function calculate() {
             tableBody.innerHTML = "";
             console.log(data.g_sum)
 
+            let l = document.getElementById("L");
+            l.innerText = data.L
+
             // wypełnianie tabeli danymi
 
             data.population.forEach((individual) => {
@@ -47,13 +53,24 @@ async function calculate() {
                                 <td>trwa selekcja...</td>
                                 <td>trwa selekcja...</td>
                                 <td>trwa selekcja...</td>
+                                <td>trwa krzyżowanie...</td>
+                                <td>trwa krzyżowanie...</td>
+                                <td>trwa krzyżowanie...</td>
+                                <td>trwa krzyżowanie...</td>
                              </tr>`;
                 tableBody.innerHTML += row;
             });
 
             let pop = await selection(data.population, data.g_sum, a, b);
             console.log(pop)
-            if (pop != data.population) { crossover(pop, pk); }
+            if (pop != data.population) {
+                pop = await crossover(pop, pk);
+                console.log(pop)
+                // if (pop != data.population) {
+                //     // mutation()
+                // }
+            }
+
 
             
 
@@ -93,13 +110,8 @@ async function selection(pop, g_sum, a, b) {
                     row.cells[4].textContent = individual.p.toFixed(prec);
                     row.cells[5].textContent = individual.q.toFixed(prec);
                     row.cells[6].textContent = individual.r.toFixed(prec);
-                    if (individual.x_sel) {
-                        row.cells[7].textContent = individual.x_sel.toFixed(prec);
-                        row.cells[8].textContent = individual.x_sel_bin;
-                    } else {
-                        row.cells[7].textContent = "-";
-                        row.cells[8].textContent = "-";
-                    }
+                    row.cells[7].textContent = individual.x_sel.toFixed(prec);
+                    row.cells[8].textContent = individual.x_sel_bin;
                 }
             });
             return data.population;
@@ -116,13 +128,48 @@ async function selection(pop, g_sum, a, b) {
 async function crossover(pop, pk) {
     const requestData = { pop: pop, pk: pk };
     console.log(requestData)
-    const response = await fetch("/crossover", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    });
+    try {
+        const response = await fetch("/crossover", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        
+        if (response.ok) {
+            const data = await response.json();
+
+            console.log(data)
+
+            data.population.forEach((individual) => {
+                const row = document.getElementById(individual.id);
+                if (row) {
+                    row.cells[9].textContent = individual.parent
+                    if (individual.pc == 0) {
+                        row.cells[10].textContent = '-'
+                    } else if (individual.id == data.backup_id) {
+                        row.cells[10].textContent = `${individual.pc},${data.backup_pc}`
+                        let expl = document.getElementById('expl')
+                        expl.innerText = `Osobnik z ID ${data.backup_id} został poddany krzyżowaniu drugi raz, ponieważ liczba rodziców była nieparzysta i ostatni został bez pary.`
+                    }
+                    else {
+                        row.cells[10].textContent = individual.pc
+                    }
+                    row.cells[11].textContent = individual.child
+                    row.cells[12].textContent = individual.new_gen
+                }
+            });
+            return data.population;
+        } else {
+            console.log("Błąd przy pobieraniu danych z /selection");
+            return pop;
+        }
+    } catch (error) {
+        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
+        return pop;
+    }
 }
 
 async function mutation(pop, g_sum) {

@@ -88,7 +88,7 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 
 	var gSum float64 = 0
 
-	var result Result
+	var result CalculationResult
 	result.L = l
 	for i := 1; i <= N; i++ {
 		xReal := math.Round((a+rand.Float64()*(b-a))/d) * d
@@ -147,7 +147,7 @@ func selection(w http.ResponseWriter, r *http.Request) {
 			} else {
 				qLast = individuals[j-1].Q
 			}
-			if indiv.R > qLast && indiv.R < individuals[j].Q && j != i {
+			if indiv.R > qLast && indiv.R < individuals[j].Q {
 				indiv.XSel = individuals[j].XReal
 				indiv.XSelBin = intToBin(realToInt(indiv.XSel, payload.A, payload.B))
 			}
@@ -175,7 +175,6 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var individuals []Individual = payload.Population
-	fmt.Println(payload)
 
 	for i := 0; i < len(individuals); i++ {
 		ind := &individuals[i]
@@ -184,14 +183,56 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 			ind.Parent = ind.XSelBin
 		} else {
 			ind.Parent = "-"
+			ind.Child = "-"
+			ind.NewGen = ind.XSelBin
 			continue
 		}
-		pc := rand.Intn(len(ind.XSelBin)-1) + 1
-		fmt.Println(pc)
-		child := ind.Bin[:pc] + ind.Parent[pc:]
-		fmt.Println(child)
+		ind.Pc = rand.Intn(len(ind.XSelBin)-2) + 1
 	}
 
+	var backupInd *Individual
+	var backupId, backupPc int
+	for i := 0; i < len(individuals); i++ {
+		ind := &individuals[i]
+		if ind.Parent == "-" || ind.Child != "" {
+			continue
+		}
+
+		var secondParent *Individual
+		for j := i + 1; j < len(individuals); j++ {
+			secInd := &individuals[j]
+			if secInd.Parent != "-" {
+				secondParent = secInd
+				break
+			}
+		}
+
+		if secondParent == nil {
+			ind.Child = ind.Parent[:ind.Pc] + backupInd.XSelBin[ind.Pc:]
+			ind.NewGen = ind.Child
+			backupId = backupInd.ID
+			backupPc = ind.Pc
+			continue
+		}
+
+		ind.Child = ind.Parent[:ind.Pc] + secondParent.XSelBin[ind.Pc:]
+		ind.NewGen = ind.Child
+		secondParent.Pc = ind.Pc
+		secondParent.Child = secondParent.Parent[:secondParent.Pc] + ind.Parent[secondParent.Pc:]
+		secondParent.NewGen = secondParent.Child
+
+		backupInd = secondParent
+	}
+	result := CrossoverResult{
+		Population: individuals,
+		BackupId:   backupId,
+		BackupPc:   backupPc,
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	}
 }
 
 func mutation(w http.ResponseWriter, r *http.Request) {

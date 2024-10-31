@@ -30,6 +30,9 @@
             <label for="N">Rozmiar Populacji (N):</label>
             <input type="number" id="N" value="10" step="1">
 
+            <label for="N">Liczba bitów (L): </label>
+            <h1 id="L"></h1>
+
             <label for="pk">pk</label>
             <select id="pk">
                 <option value="0.75" selected>0.75</option>
@@ -46,6 +49,8 @@
         </div>
     </div>
 
+    <h3 id="expl"></h3>
+
     <table>
         <thead>
             <tr>
@@ -58,6 +63,10 @@
                 <th>r</th>
                 <th>xReal</th>
                 <th>xBin</th>
+                <th>Parent</th>
+                <th>Pc</th>
+                <th>Child</th>
+                <th>New Generation</th>
             </tr>
         </thead>
         <tbody id="table-body">
