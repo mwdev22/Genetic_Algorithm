@@ -4,12 +4,18 @@ body {
     color: #333;
     margin: 0;
     padding: 0;
+    text-align: center;
 }
 
 h1 {
     text-align: center;
     margin-top: 20px;
     color: #000000;
+}
+#L {
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 6px;
 }
 
 .panel{
@@ -106,7 +112,7 @@ th, td {
 
 th {
     background-color: #62ec8e;
-    color: white;
+    color: black;
 }
 
 td {
@@ -124,3 +130,4 @@ tr:hover {
 .highlighted td {
     background-color: #fbec1c; 
 }
+

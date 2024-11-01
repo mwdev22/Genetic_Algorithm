@@ -23,8 +23,11 @@ type CrossoverPayload struct {
 }
 
 type MutationPayload struct {
-	Offspring    []Individual `json:"offspring"`
-	MutationRate float64      `json:"mutation_rate"`
+	Population []Individual `json:"pop"`
+	Pm         float64      `json:"pm"`
+	A          float64      `json:"a"`
+	B          float64      `json:"b"`
+	D          float64      `json:"d"`
 }
 
 // responses
@@ -34,7 +37,7 @@ type CalculationResult struct {
 	GSum       float64      `json:"g_sum"`
 }
 
-type SelectionResult struct {
+type PopulationResult struct {
 	Population []Individual `json:"population"`
 }
 
@@ -45,21 +48,25 @@ type CrossoverResult struct {
 }
 
 type Individual struct {
-	ID      int     `json:"id"`
-	XReal   float64 `json:"x_real"`
-	XInt    int     `json:"x_int,omitempty"`
-	Bin     string  `json:"bin"`
-	Fx      float64 `json:"fx"`
-	Gx      float64 `json:"gx"`
-	P       float64 `json:"p,omitempty"`
-	Q       float64 `json:"q"`
-	R       float64 `json:"r"`
-	XSel    float64 `json:"x_sel"`
-	XSelBin string  `json:"x_sel_bin"`
-	Parent  string  `json:"parent"`
-	Pc      int     `json:"pc"`
-	Child   string  `json:"child"`
-	NewGen  string  `json:"new_gen"`
+	ID           int     `json:"id"`
+	XReal        float64 `json:"x_real"`
+	XInt         int     `json:"x_int,omitempty"`
+	Bin          string  `json:"bin"`
+	Fx           float64 `json:"fx"`
+	Gx           float64 `json:"gx"`
+	P            float64 `json:"p,omitempty"`
+	Q            float64 `json:"q"`
+	R            float64 `json:"r"`
+	XSel         float64 `json:"x_sel"`
+	XSelBin      string  `json:"x_sel_bin"`
+	Parent       string  `json:"parent"`
+	Pc           int     `json:"pc"`
+	Child        string  `json:"child"`
+	NewGen       string  `json:"new_gen"`
+	MutatedGenes []int   `json:"mutated_genes"`
+	FinalGen     string  `json:"final_gen"`
+	FinalXReal   float64 `json:"final_x_real"`
+	FinalFx      float64 `json:"final_fx"`
 }
 
 // restrykcja ścieżek

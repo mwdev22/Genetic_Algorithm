@@ -15,7 +15,7 @@ async function calculate() {
 
     // ekran ładowania
     const tableBody = document.getElementById("table-body");
-    tableBody.innerHTML = "<tr><td colspan='7'>Ładowanie...</td></tr>"; 
+    tableBody.innerHTML = "<tr><td colspan='17'>Ładowanie...</td></tr>"; 
 
     let expl = document.getElementById('expl')
     expl.innerText = ``
@@ -57,6 +57,10 @@ async function calculate() {
                                 <td>trwa krzyżowanie...</td>
                                 <td>trwa krzyżowanie...</td>
                                 <td>trwa krzyżowanie...</td>
+                                <td>trwa mutacja...</td>
+                                <td>trwa mutacja...</td>
+                                <td>trwa mutacja...</td>
+                                <td>trwa mutacja...</td>
                              </tr>`;
                 tableBody.innerHTML += row;
             });
@@ -66,16 +70,12 @@ async function calculate() {
             if (pop != data.population) {
                 pop = await crossover(pop, pk);
                 console.log(pop)
-                // if (pop != data.population) {
-                //     // mutation()
-                // }
+                if (pop != data.population) {
+                    pop = await mutation(pop, a, b);
+                }
             }
-
-
-            
-
         } else {
-            tableBody.innerHTML = "<tr><td colspan='7'>błąd przy pobieraniu danych</td></tr>";
+            tableBody.innerHTML = "<tr><td colspan='17'>błąd przy pobieraniu danych</td></tr>";
             console.error("błąd przy pobieraniu danych");
         }
     } catch (error) {
@@ -172,14 +172,49 @@ async function crossover(pop, pk) {
     }
 }
 
-async function mutation(pop, g_sum) {
-    const requestData = {pop: pop, g_sum: g_sum};
-    const response = await fetch("/selection", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    });
+async function mutation(pop, a, b) {
+    let pm = parseFloat(document.getElementById('pm').value)
+    const d = parseFloat(document.getElementById("precision").value); 
+
+    const requestData = {pop: pop, pm: pm, a: a, b: b, d: d};
+
+    try {
+        const response = await fetch("/mutation", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        
+        if (response.ok) {
+            const data = await response.json();
+
+            console.log(data)
+
+            data.population.forEach((individual) => {
+                const row = document.getElementById(individual.id);
+                if (row) {
+                    if (individual.mutated_genes == null) {
+                        row.cells[13].textContent = "-"
+                    } else {
+                        row.cells[13].textContent = individual.mutated_genes
+                    }
+                    row.cells[14].textContent = individual.final_gen
+                    row.cells[15].textContent = individual.final_x_real.toFixed(prec)
+                    row.cells[16].textContent = individual.final_fx.toFixed(prec)
+                }
+            });
+            return data.population;
+        } else {
+            console.log("Błąd przy pobieraniu danych z /selection");
+            return pop;
+        }
+        
+    } catch (error) {
+        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
+        return pop;
+    }
 }
 

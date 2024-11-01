@@ -37,6 +37,7 @@ func main() {
 	mux.HandleFunc("/calculate", calculate)
 	mux.HandleFunc("/selection", selection)
 	mux.HandleFunc("/crossover", crossover)
+	mux.HandleFunc("/mutation", mutation)
 
 	var err error
 	addr := os.Getenv("ADDR")
@@ -63,8 +64,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 // funkcja oceny
 func evalFunc(x float64) float64 {
-	mod := x - math.Floor(x)
-	return mod * (math.Cos(20*math.Pi*x) - math.Sin(x))
+	// mod := x - math.Floor(x)
+	// return mod * (math.Cos(20*math.Pi*x) - math.Sin(x))
+	return -(x + 1) * (x - 1) * (x - 2)
 }
 
 func calculate(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +156,7 @@ func selection(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	result := SelectionResult{
+	result := PopulationResult{
 		Population: individuals,
 	}
 
@@ -176,6 +178,7 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 
 	var individuals []Individual = payload.Population
 
+	// incjalizacja danych krzyżowania osobnikóœ
 	for i := 0; i < len(individuals); i++ {
 		ind := &individuals[i]
 		r := rand.Float64()
@@ -187,10 +190,11 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 			ind.NewGen = ind.XSelBin
 			continue
 		}
-		ind.Pc = rand.Intn(len(ind.XSelBin)-2) + 1
+		ind.Pc = rand.Intn(len(ind.XSelBin)-1) + 1
 	}
 
 	var backupInd *Individual
+	// przechowywanie zapasowego rodzica, w razie nieparzystej ilości
 	var backupId, backupPc int
 	for i := 0; i < len(individuals); i++ {
 		ind := &individuals[i]
@@ -236,6 +240,44 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 }
 
 func mutation(w http.ResponseWriter, r *http.Request) {
+
+	var payload MutationPayload
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	var individuals []Individual = payload.Population
+
+	for i := 0; i < len(individuals); i++ {
+		ind := &individuals[i]
+		finalGen := []byte(ind.NewGen)
+		for j := 0; j < len(finalGen); j++ {
+			r := rand.Float64()
+			if r <= payload.Pm {
+				switch finalGen[j] {
+				case '0':
+					finalGen[j] = '1'
+				case '1':
+					finalGen[j] = '0'
+				}
+				ind.MutatedGenes = append(ind.MutatedGenes, j+1)
+			}
+		}
+		ind.FinalGen = string(finalGen)
+		ind.FinalXReal = intToReal(binToInt(ind.FinalGen), payload.A, payload.B)
+		ind.FinalXReal = math.Round(ind.FinalXReal/payload.D) * payload.D
+		ind.FinalFx = evalFunc(ind.FinalXReal)
+	}
+
+	result := PopulationResult{
+		Population: individuals,
+	}
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	}
 
 }
 
