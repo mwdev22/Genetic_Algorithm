@@ -1,7 +1,5 @@
 package main
 
-import "net/http"
-
 // payloads
 type CalculationPayload struct {
 	A float64 `json:"a"`
@@ -67,18 +65,4 @@ type Individual struct {
 	FinalGen     string  `json:"final_gen"`
 	FinalXReal   float64 `json:"final_x_real"`
 	FinalFx      float64 `json:"final_fx"`
-}
-
-// restrykcja ścieżek
-func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "/mutation", "/crossover"}
-		for _, path := range allowedPaths {
-			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
-		http.NotFound(w, r)
-	}
 }

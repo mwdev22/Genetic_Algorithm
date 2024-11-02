@@ -7,59 +7,22 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
 )
 
-var l int              // liczba bitów
-var production = false // true w przy udostępnianiu na serwerze
+var l int // liczba bitów
 
 func main() {
-	fmt.Println("Starting app...")
-	if os.Getenv("MODE") == "PRODUCTION" {
-		production = true
-	}
+	config := loadConfig()
+	log.Printf("uruchamianie aplikacji w trybie %s...", modeName(config.isProduction))
+
 	rand.Seed(time.Now().UnixNano())
 
-	// router
-	mux := http.NewServeMux()
+	mux := initializeRouter(&config)
 
-	var staticPath string
-	if production {
-		staticPath = "/home/mwdev22/ins/static"
-	} else {
-		staticPath = "./static"
+	if err := startServer(&config, mux); err != nil {
+		log.Fatalf("bład przy uruchamianiu serwera: %v", err)
 	}
-	fs := http.FileServer(http.Dir(staticPath))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
-
-	mux.HandleFunc("/", index)
-	mux.HandleFunc("/calculate", calculate)
-	mux.HandleFunc("/selection", selection)
-	mux.HandleFunc("/crossover", crossover)
-	mux.HandleFunc("/mutation", mutation)
-
-	var err error
-	addr := os.Getenv("ADDR")
-	if addr != "" {
-		// wymaganie serwisu hostingowego do nasłuchiwania na ipv6
-		err = http.ListenAndServe(addr, mux)
-	} else {
-		err = http.ListenAndServe(":8080", restrictPaths(mux.ServeHTTP))
-	}
-	if err != nil {
-		log.Fatalf("nie udało się uruchomić serwera: %v", err)
-	}
-}
-
-func index(w http.ResponseWriter, r *http.Request) {
-	var path string
-	if production {
-		path = "/home/mwdev22/ins/index.html"
-	} else {
-		path = "./index.html"
-	}
-	http.ServeFile(w, r, path)
 }
 
 // funkcja oceny
