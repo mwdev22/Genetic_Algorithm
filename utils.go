@@ -14,7 +14,7 @@ type Config struct {
 
 func loadConfig() Config {
 	isProduction := os.Getenv("MODE") == "PRODUCTION"
-	addr := os.Getenv("ADDR")
+	addr := os.Getenv("IP")
 
 	staticPath := "./static"
 	indexPath := "./index.html"

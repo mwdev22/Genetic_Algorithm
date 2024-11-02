@@ -35,7 +35,6 @@ async function calculate() {
             const data = await response.json();
 
             tableBody.innerHTML = "";
-            console.log(data.g_sum)
 
             let l = document.getElementById("L");
             l.innerText = data.L
@@ -66,10 +65,8 @@ async function calculate() {
             });
 
             let pop = await selection(data.population, data.g_sum, a, b);
-            console.log(pop)
             if (pop != data.population) {
                 pop = await crossover(pop, pk);
-                console.log(pop)
                 if (pop != data.population) {
                     pop = await mutation(pop, a, b);
                 }
@@ -86,7 +83,6 @@ async function calculate() {
 
 async function selection(pop, g_sum, a, b) {
     const requestData = { pop: pop, g_sum: g_sum, a: a, b: b };
-    console.log(requestData);
     try {
         const response = await fetch("/selection", {
             method: "POST",
@@ -127,7 +123,6 @@ async function selection(pop, g_sum, a, b) {
 
 async function crossover(pop, pk) {
     const requestData = { pop: pop, pk: pk };
-    console.log(requestData)
     try {
         const response = await fetch("/crossover", {
             method: "POST",
@@ -141,7 +136,6 @@ async function crossover(pop, pk) {
         if (response.ok) {
             const data = await response.json();
 
-            console.log(data)
 
             data.population.forEach((individual) => {
                 const row = document.getElementById(individual.id);
@@ -191,7 +185,6 @@ async function mutation(pop, a, b) {
         if (response.ok) {
             const data = await response.json();
 
-            console.log(data)
 
             data.population.forEach((individual) => {
                 const row = document.getElementById(individual.id);
