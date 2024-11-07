@@ -33,6 +33,7 @@ func evalFunc(x float64) float64 {
 }
 
 func calculate(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
 
 	var payload CalculationPayload
@@ -42,38 +43,38 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, b, d, N := payload.A, payload.B, payload.D, payload.N
+	a := payload.A
+	b := payload.B
+	d := payload.D
+	N := payload.N
+
+	// kalkulacja liczby bitów
 	l = int(math.Ceil(math.Log2((b - a) / d)))
+
+	var gSum float64 = 0
+
 	minFx := minF(a, b, d)
 
 	var result CalculationResult
 	result.L = l
-	gSumChan := make(chan float64, N)
-	populationChan := make(chan Individual, N)
-
 	for i := 1; i <= N; i++ {
-		go func(id int) {
-			xReal := math.Round((a+rand.Float64()*(b-a))/d) * d
-			xInt := realToInt(xReal, a, b)
-			bin := intToBin(xInt)
-			fx := evalFunc(xReal)
-			gx := g(fx, minFx, d)
+		xReal := math.Round((a+rand.Float64()*(b-a))/d) * d
+		xInt := realToInt(xReal, a, b)
+		bin := intToBin(xInt)
+		fx := evalFunc(xReal)
+		gx := g(fx, minFx, d)
 
-			gSumChan <- gx
-			populationChan <- Individual{
-				ID:    id,
-				XReal: xReal,
-				Bin:   bin,
-				Fx:    fx,
-				Gx:    gx,
-			}
-		}(i)
-	}
+		gSum += gx
 
-	var gSum float64
-	for i := 0; i < N; i++ {
-		gSum += <-gSumChan
-		result.Population = append(result.Population, <-populationChan)
+		indiv := Individual{
+			ID:    i,
+			XReal: xReal,
+			Bin:   bin,
+			Fx:    fx,
+			Gx:    gx,
+		}
+		result.Population = append(result.Population, indiv)
+
 	}
 	result.GSum = gSum
 
