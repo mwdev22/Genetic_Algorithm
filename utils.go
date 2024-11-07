@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -10,11 +14,18 @@ type Config struct {
 	addr         string
 	staticPath   string
 	indexPath    string
+	Port         string
 }
 
 func loadConfig() Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("błąd przy ładowaniu zmiennych środowiskowych")
+	}
+
 	isProduction := os.Getenv("MODE") == "PRODUCTION"
-	addr := os.Getenv("IP")
+	addr := os.Getenv("ADDR")
+	port := os.Getenv("PORT")
 
 	staticPath := "./static"
 	indexPath := "./index.html"
@@ -28,6 +39,7 @@ func loadConfig() Config {
 		addr:         addr,
 		staticPath:   staticPath,
 		indexPath:    indexPath,
+		Port:         port,
 	}
 }
 
@@ -53,7 +65,9 @@ func initializeRouter(config *Config) *http.ServeMux {
 
 func startServer(config *Config, mux *http.ServeMux) error {
 	if config.addr != "" {
-		return http.ListenAndServe(config.addr, restrictPaths(mux.ServeHTTP))
+		addr := config.addr + ":" + config.Port
+		fmt.Println(addr)
+		return http.ListenAndServe(addr, mux)
 	}
 	return http.ListenAndServe(":8080", restrictPaths(mux.ServeHTTP))
 }
