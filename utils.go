@@ -38,6 +38,9 @@ func initializeRouter(config *Config) *http.ServeMux {
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
 		http.ServeFile(w, r, config.indexPath)
 	})
 	mux.HandleFunc("/calculate", calculate)
