@@ -85,27 +85,19 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func selection(w http.ResponseWriter, r *http.Request) {
-	var payload SelectionPayload
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	var individuals []Individual = payload.Population
+func selection(gSum, a, b float64, individuals []*Individual) []*Individual {
 
 	var pSum float64 = 0
 
 	for i := 0; i < len(individuals); i++ {
-		indiv := &individuals[i]
-		indiv.P = indiv.Gx / payload.GSum
+		indiv := individuals[i]
+		indiv.P = indiv.Gx / gSum
 		pSum += indiv.P
 		indiv.Q = pSum
 	}
 
 	for i := 0; i < len(individuals); i++ {
-		indiv := &individuals[i]
+		indiv := individuals[i]
 		indiv.R = rand.Float64()
 		for j := 0; j < len(individuals); j++ {
 			var qLast float64
@@ -116,38 +108,22 @@ func selection(w http.ResponseWriter, r *http.Request) {
 			}
 			if indiv.R > qLast && indiv.R < individuals[j].Q {
 				indiv.XSel = individuals[j].XReal
-				indiv.XSelBin = intToBin(realToInt(indiv.XSel, payload.A, payload.B))
+				indiv.XSelBin = intToBin(realToInt(indiv.XSel, a, b))
 			}
 		}
 	}
 
-	result := PopulationResult{
-		Population: individuals,
-	}
-
-	err = json.NewEncoder(w).Encode(result)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
-	}
+	return individuals
 
 }
 
-func crossover(w http.ResponseWriter, r *http.Request) {
-
-	var payload CrossoverPayload
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	var individuals []Individual = payload.Population
+func crossover(individuals []*Individual, pk float64) []*Individual {
 
 	// incjalizacja danych krzyżowania osobnikóœ
 	for i := 0; i < len(individuals); i++ {
-		ind := &individuals[i]
+		ind := individuals[i]
 		r := rand.Float64()
-		if r <= payload.Pk {
+		if r <= pk {
 			ind.Parent = ind.XSelBin
 		} else {
 			ind.Parent = "-"
@@ -160,16 +136,15 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 
 	var backupInd *Individual
 	// przechowywanie zapasowego rodzica, w razie nieparzystej ilości
-	var backupId, backupPc int
 	for i := 0; i < len(individuals); i++ {
-		ind := &individuals[i]
+		ind := individuals[i]
 		if ind.Parent == "-" || ind.Child != "" {
 			continue
 		}
 
 		var secondParent *Individual
 		for j := i + 1; j < len(individuals); j++ {
-			secInd := &individuals[j]
+			secInd := individuals[j]
 			if secInd.Parent != "-" {
 				secondParent = secInd
 				break
@@ -179,8 +154,6 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 		if secondParent == nil {
 			ind.Child = ind.Parent[:ind.Pc] + backupInd.XSelBin[ind.Pc:]
 			ind.NewGen = ind.Child
-			backupId = backupInd.ID
-			backupPc = ind.Pc
 			continue
 		}
 
@@ -192,35 +165,17 @@ func crossover(w http.ResponseWriter, r *http.Request) {
 
 		backupInd = secondParent
 	}
-	result := CrossoverResult{
-		Population: individuals,
-		BackupId:   backupId,
-		BackupPc:   backupPc,
-	}
-
-	err = json.NewEncoder(w).Encode(result)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
-	}
+	return individuals
 }
 
-func mutation(w http.ResponseWriter, r *http.Request) {
-
-	var payload MutationPayload
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy parsowaniu body requestu: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	var individuals []Individual = payload.Population
+func mutation(pm, a, b, d float64, individuals []*Individual) []*Individual {
 
 	for i := 0; i < len(individuals); i++ {
-		ind := &individuals[i]
+		ind := individuals[i]
 		finalGen := []byte(ind.NewGen)
 		for j := 0; j < len(finalGen); j++ {
 			r := rand.Float64()
-			if r <= payload.Pm {
+			if r <= pm {
 				switch finalGen[j] {
 				case '0':
 					finalGen[j] = '1'
@@ -231,18 +186,12 @@ func mutation(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		ind.FinalGen = string(finalGen)
-		ind.FinalXReal = intToReal(binToInt(ind.FinalGen), payload.A, payload.B)
-		ind.FinalXReal = math.Round(ind.FinalXReal/payload.D) * payload.D
+		ind.FinalXReal = intToReal(binToInt(ind.FinalGen), a, b)
+		ind.FinalXReal = math.Round(ind.FinalXReal/d) * d
 		ind.FinalFx = evalFunc(ind.FinalXReal)
 	}
 
-	result := PopulationResult{
-		Population: individuals,
-	}
-	err = json.NewEncoder(w).Encode(result)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
-	}
+	return individuals
 
 }
 

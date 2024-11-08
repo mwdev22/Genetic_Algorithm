@@ -56,9 +56,9 @@ func initializeRouter(config *Config) *http.ServeMux {
 		http.ServeFile(w, r, config.indexPath)
 	})
 	mux.HandleFunc("/calculate", calculate)
-	mux.HandleFunc("/selection", selection)
-	mux.HandleFunc("/crossover", crossover)
-	mux.HandleFunc("/mutation", mutation)
+	// mux.HandleFunc("/selection", selection)
+	// mux.HandleFunc("/crossover", crossover)
+	// mux.HandleFunc("/mutation", mutation)
 
 	return mux
 }
