@@ -51,10 +51,11 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 	var results = make(map[float64]*FinalResult)
 
 	for _, ind := range population {
-		res, ok := results[ind.FinalFx]
+		finalXReal := math.Round(ind.XReal/payload.D) * payload.D
+		res, ok := results[finalXReal]
 		if !ok {
-			results[ind.FinalFx] = &FinalResult{
-				XReal:   ind.FinalXReal,
+			results[finalXReal] = &FinalResult{
+				XReal:   finalXReal,
 				XBin:    ind.FinalGen,
 				Fx:      ind.FinalFx,
 				Count:   1,

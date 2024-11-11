@@ -1,21 +1,43 @@
+let myChart;  
+let prec = 2
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(tabContent => {
+        tabContent.classList.remove('active');
+    });
+
+    document.querySelectorAll('.tabs div').forEach(tabElement => {
+        tabElement.classList.remove('active');
+    });
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    if (tab === 'plot') {
+        document.querySelector('.plot-content').classList.add('active');
+    } else {
+        document.querySelector('.table-content').classList.add('active');
+    }
+}
+
 async function calculate() {
     const a = parseFloat(document.getElementById("a").value);
     const b = parseFloat(document.getElementById("b").value);
-    const d = parseFloat(document.getElementById("precision").value); 
+    const d = parseFloat(document.getElementById("precision").value);
     const N = parseInt(document.getElementById("N").value);
     const T = parseInt(document.getElementById("T").value);
     const pk = parseFloat(document.getElementById("pk").value);
     const pm = parseFloat(document.getElementById("pm").value);
     const elite = document.getElementById("elite").checked;
 
+    prec = d.toString().length - 2
+
     const requestData = { a: a, b: b, d: d, T: T, N: N, pk: pk, pm: pm, elite: elite };
 
-    // Show loading indicator while fetching data
+
+
     const tableBody = document.getElementById("table-body");
-    tableBody.innerHTML = "<tr><td colspan='17'>Ładowanie...</td></tr>"; 
+    tableBody.innerHTML = "<tr><td colspan='5'>Ładowanie...</td></tr>";
 
     try {
-        // Send POST request to the backend
         const response = await fetch("/calculate", {
             method: "POST",
             headers: {
@@ -26,25 +48,40 @@ async function calculate() {
 
         if (response.ok) {
             const data = await response.json();
-            tableBody.innerHTML = "";
+            console.log(data)
+            const finalGenData = data.results;
+            tableBody.innerHTML = '';  
+            finalGenData.sort((a, b) => b.percent - a.percent);
 
-            // Extract generation stats for plotting
-            const genStats = data.gen_stats;  // This contains the FMin, FMax, FAvg for each generation
-            
+            finalGenData.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.x_real.toFixed(prec)}</td>
+                    <td>${result.x_bin}</td>
+                    <td>${result.fx}</td>
+                    <td>${result.percent.toFixed(prec)}</td>
+                    <td>${result.count}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            const genStats = data.gen_stats;
             const fmin = [];
             const fmax = [];
             const favg = [];
-            
-            // Iterate over generation stats and extract the required data
-            for (let i = 0; i < genStats.length; i++) {
-                fmin.push(genStats[i].f_min);
-                fmax.push(genStats[i].f_max);
-                favg.push(genStats[i].f_avg);
+
+            genStats.forEach(stat => {
+                fmin.push(stat.f_min);
+                fmax.push(stat.f_max);
+                favg.push(stat.f_avg);
+            });
+
+            if (myChart) {
+                myChart.destroy();
             }
 
-            // Prepare the chart data
             const chartData = {
-                labels: Array.from({ length: genStats.length }, (_, i) => i + 1), // X-axis: generation indexes
+                labels: Array.from({ length: genStats.length }, (_, i) => i + 1),
                 datasets: [
                     {
                         label: 'FMin',
@@ -67,9 +104,8 @@ async function calculate() {
                 ],
             };
 
-            // Create the chart
             const ctx = document.getElementById('myChart').getContext('2d');
-            const myChart = new Chart(ctx, {
+            myChart = new Chart(ctx, {
                 type: 'line',
                 data: chartData,
                 options: {
@@ -95,12 +131,13 @@ async function calculate() {
                     },
                 },
             });
+
         } else {
-            tableBody.innerHTML = "<tr><td colspan='17'>Błąd przy pobieraniu danych</td></tr>";
+            tableBody.innerHTML = "<tr><td colspan='5'>Błąd przy pobieraniu danych</td></tr>";
             console.error("Błąd przy pobieraniu danych");
         }
     } catch (error) {
-        tableBody.innerHTML = "<tr><td colspan='7'>Błąd przy pobieraniu danych</td></tr>";
+        tableBody.innerHTML = "<tr><td colspan='5'>Błąd przy pobieraniu danych</td></tr>";
         console.error("Błąd przy pobieraniu danych", error);
     }
 }

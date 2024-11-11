@@ -54,11 +54,33 @@
         </div>
     </div>
 
-    <div class="plotDiv">
-        <canvas id="myChart"></canvas>
+    <div class="tabs">
+        <div id="tab-plot" class="active" onclick="switchTab('plot')">Plot</div>
+        <div id="tab-table" onclick="switchTab('table')">Stats Table</div>
     </div>
 
+    <div class="tab-content plot-content active">
+        <div class="plotDiv">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
 
+    <div class="tab-content table-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>X Real</th>
+                    <th>X Bin</th>
+                    <th>Fx</th>
+                    <th>Percent</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Table will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
 
     <table>
         <thead>            

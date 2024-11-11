@@ -132,6 +132,26 @@ tr:hover {
 }
 
 .plotDiv {
-    width: "50vw";
-    height: "40vw";
+    width: 80%; 
+    max-width: 1600px;  
+    margin: 0 auto;  
+}
+
+.tabs {
+    display: flex;
+    cursor: pointer;
+}
+.tabs div {
+    padding: 10px;
+    background-color: lightgray;
+    margin-right: 5px;
+}
+.tabs .active {
+    background-color: darkgray;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
 }
