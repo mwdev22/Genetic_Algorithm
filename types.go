@@ -2,47 +2,48 @@ package main
 
 // payloads
 type CalculationPayload struct {
-	A float64 `json:"a"`
-	B float64 `json:"b"`
-	D float64 `json:"d"`
-	N int     `json:"N"`
+	A     float64 `json:"a"`
+	B     float64 `json:"b"`
+	D     float64 `json:"d"`
+	N     int     `json:"N"`
+	T     int     `json:"T"`
+	Pk    float64 `json:"pk"`
+	Pm    float64 `json:"pm"`
+	Elite bool    `json:"elite"`
 }
 
-type SelectionPayload struct {
-	Population []Individual `json:"pop"`
-	GSum       float64      `json:"g_sum"`
-	A          float64      `json:"a"`
-	B          float64      `json:"b"`
-}
-
-type CrossoverPayload struct {
-	Population []Individual `json:"pop"`
-	Pk         float64      `json:"pk"`
-}
-
-type MutationPayload struct {
-	Population []Individual `json:"pop"`
-	Pm         float64      `json:"pm"`
-	A          float64      `json:"a"`
-	B          float64      `json:"b"`
-	D          float64      `json:"d"`
+type TestPayload struct {
+	A     float64 `json:"a"`
+	B     float64 `json:"b"`
+	D     float64 `json:"d"`
+	N     int     `json:"N"`
+	T     int     `json:"T"`
+	Pk    float64 `json:"pk"`
+	Pm    float64 `json:"pm"`
+	Elite bool    `json:"elite"`
 }
 
 // responses
 type CalculationResult struct {
-	L          int          `json:"L"`
-	Population []Individual `json:"population"`
-	GSum       float64      `json:"g_sum"`
+	Population   []*Individual      `json:"population"`
+	GenStats     []*GenerationStats `json:"gen_stats"`
+	FinalGenData []*FinalResult     `json:"results"`
 }
 
-type PopulationResult struct {
-	Population []Individual `json:"population"`
+type GenerationStats struct {
+	FMin     float64 `json:"f_min"`
+	FMax     float64 `json:"f_max"`
+	FAvg     float64 `json:"f_avg"`
+	Elite    float64
+	EliteInd int
 }
 
-type CrossoverResult struct {
-	Population []Individual `json:"population"`
-	BackupId   int          `json:"backup_id"`
-	BackupPc   int          `json:"backup_pc"`
+type FinalResult struct {
+	XReal   float64 `json:"x_real"`
+	XBin    string  `json:"x_bin"`
+	Fx      float64 `json:"fx"`
+	Percent float64 `json:"percent"`
+	Count   int     `json:"count"`
 }
 
 type Individual struct {

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorytm Genetyczny</title>
     <link rel="stylesheet" href="/static/style.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/main.js"></script>
 </head>
 <body>
@@ -15,10 +15,10 @@
     <div class="panel">
         <div class="input-container">
             <label for="a">a:</label>
-            <input type="number" id="a" value="-2" step="0.001">
+            <input type="number" id="a" value="-4" step="0.001">
 
             <label for="b">b:</label>
-            <input type="number" id="b" value="2" step="0.001">
+            <input type="number" id="b" value="12" step="0.001">
 
             <label for="precision">Dokładność (d):</label>
             <select id="precision">
@@ -27,11 +27,11 @@
                 <option value="0.001" selected>0.001</option>
             </select>
 
-            <label for="N">Rozmiar Populacji (N):</label>
+            <label for="N">N:</label>
             <input type="number" id="N" value="10" step="1">
 
-            <label for="N">Liczba bitów (L): </label>
-            <span id="L"></span>
+            <label for="N">T:</label>
+            <input type="number" id="T" value="40" step="1">
 
             <label for="pk">Pk</label>
             <select id="pk">
@@ -43,7 +43,9 @@
             </select>
 
             <label for="pm">Pm</label>
-            <input type="number" id="pm" value="0.05" step="0.001">
+            <input type="number" id="pm" value="0.001" step="0.001">
+
+            <input type="checkbox" name="elite" id="elite" checked>
 
             
 
@@ -52,29 +54,14 @@
         </div>
     </div>
 
-    <h3 id="expl"></h3>
+    <div class="plotDiv">
+        <canvas id="myChart"></canvas>
+    </div>
+
+
 
     <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>X Real</th>
-                <th>f(x)</th>
-                <th>g(x)</th>
-                <th>p</th>
-                <th>q</th>
-                <th>r</th>
-                <th>X* Real</th>
-                <th>X* Bin</th>
-                <th>Rodzic</th>
-                <th>Pc</th>
-                <th>Dziecko</th>
-                <th>New Gen</th>
-                <th>Punkty Mutacji</th>
-                <th>X** Bin</th>
-                <th>X** Real</th>
-                <th>f(x)</th>
-            </tr>
+        <thead>            
         </thead>
         <tbody id="table-body">
             <!-- tabela zostaje dynamicznie wypełniona przez formularz -->

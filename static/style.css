@@ -131,3 +131,7 @@ tr:hover {
     background-color: #fbec1c; 
 }
 
+.plotDiv {
+    width: "50vw";
+    height: "40vw";
+}

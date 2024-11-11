@@ -1,28 +1,21 @@
-let prec = 2
-
 async function calculate() {
-    
-    // dane z formularza do obliczeń
     const a = parseFloat(document.getElementById("a").value);
     const b = parseFloat(document.getElementById("b").value);
     const d = parseFloat(document.getElementById("precision").value); 
     const N = parseInt(document.getElementById("N").value);
+    const T = parseInt(document.getElementById("T").value);
     const pk = parseFloat(document.getElementById("pk").value);
+    const pm = parseFloat(document.getElementById("pm").value);
+    const elite = document.getElementById("elite").checked;
 
+    const requestData = { a: a, b: b, d: d, T: T, N: N, pk: pk, pm: pm, elite: elite };
 
-    prec = d.toString().length - 2
-    const requestData = { a: a, b: b, d: d, N: N };
-
-    // ekran ładowania
+    // Show loading indicator while fetching data
     const tableBody = document.getElementById("table-body");
     tableBody.innerHTML = "<tr><td colspan='17'>Ładowanie...</td></tr>"; 
 
-    let expl = document.getElementById('expl')
-    expl.innerText = ``
-
-
     try {
-        // pobieranie danych z backendu
+        // Send POST request to the backend
         const response = await fetch("/calculate", {
             method: "POST",
             headers: {
@@ -33,181 +26,81 @@ async function calculate() {
 
         if (response.ok) {
             const data = await response.json();
-
             tableBody.innerHTML = "";
 
-            let l = document.getElementById("L");
-            l.innerText = data.L
-
-            // wypełnianie tabeli danymi
-
-            data.population.forEach((individual) => {
-                const row = `<tr id="${individual.id}">
-                                <td>${individual.id}</td>
-                                <td>${individual.x_real.toFixed(prec)}</td>
-                                <td>${individual.fx.toFixed(prec)}</td>
-                                <td>${individual.gx.toFixed(prec)}</td>
-                                <td>trwa selekcja...</td>
-                                <td>trwa selekcja...</td>
-                                <td>trwa selekcja...</td>
-                                <td>trwa selekcja...</td>
-                                <td>trwa selekcja...</td>
-                                <td>trwa krzyżowanie...</td>
-                                <td>trwa krzyżowanie...</td>
-                                <td>trwa krzyżowanie...</td>
-                                <td>trwa krzyżowanie...</td>
-                                <td>trwa mutacja...</td>
-                                <td>trwa mutacja...</td>
-                                <td>trwa mutacja...</td>
-                                <td>trwa mutacja...</td>
-                             </tr>`;
-                tableBody.innerHTML += row;
-            });
-
-            let pop = await selection(data.population, data.g_sum, a, b);
-            if (pop != data.population) {
-                pop = await crossover(pop, pk);
-                if (pop != data.population) {
-                    pop = await mutation(pop, a, b);
-                }
+            // Extract generation stats for plotting
+            const genStats = data.gen_stats;  // This contains the FMin, FMax, FAvg for each generation
+            
+            const fmin = [];
+            const fmax = [];
+            const favg = [];
+            
+            // Iterate over generation stats and extract the required data
+            for (let i = 0; i < genStats.length; i++) {
+                fmin.push(genStats[i].f_min);
+                fmax.push(genStats[i].f_max);
+                favg.push(genStats[i].f_avg);
             }
-        } else {
-            tableBody.innerHTML = "<tr><td colspan='17'>błąd przy pobieraniu danych</td></tr>";
-            console.error("błąd przy pobieraniu danych");
-        }
-    } catch (error) {
-        tableBody.innerHTML = "<tr><td colspan='7'>błąd przy pobieraniu danych</td></tr>";
-        console.error("błąd przy pobieraniu danych", error);
-    }
-}
 
-async function selection(pop, g_sum, a, b) {
-    const requestData = { pop: pop, g_sum: g_sum, a: a, b: b };
-    try {
-        const response = await fetch("/selection", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestData)
-        });
+            // Prepare the chart data
+            const chartData = {
+                labels: Array.from({ length: genStats.length }, (_, i) => i + 1), // X-axis: generation indexes
+                datasets: [
+                    {
+                        label: 'FMin',
+                        data: fmin,
+                        borderColor: 'red',
+                        fill: false,
+                    },
+                    {
+                        label: 'FMax',
+                        data: fmax,
+                        borderColor: 'green',
+                        fill: false,
+                    },
+                    {
+                        label: 'FAvg',
+                        data: favg,
+                        borderColor: 'blue',
+                        fill: false,
+                    },
+                ],
+            };
 
-        
-        if (response.ok) {
-            const data = await response.json();
-
-            data.population.forEach((individual) => {
-                const row = document.getElementById(individual.id);
-                if (row) {
-                    row.cells[0].textContent = individual.id;
-                    row.cells[1].textContent = individual.x_real.toFixed(prec);
-                    row.cells[2].textContent = individual.fx.toFixed(prec);
-                    row.cells[3].textContent = individual.gx.toFixed(prec);
-                    row.cells[4].textContent = individual.p.toFixed(prec);
-                    row.cells[5].textContent = individual.q.toFixed(prec);
-                    row.cells[6].textContent = individual.r.toFixed(prec);
-                    row.cells[7].textContent = individual.x_sel.toFixed(prec);
-                    row.cells[8].textContent = individual.x_sel_bin;
-                }
+            // Create the chart
+            const ctx = document.getElementById('myChart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Generation Index',
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value',
+                            },
+                        },
+                    },
+                },
             });
-            return data.population;
         } else {
-            console.log("Błąd przy pobieraniu danych z /selection");
-            return pop;
+            tableBody.innerHTML = "<tr><td colspan='17'>Błąd przy pobieraniu danych</td></tr>";
+            console.error("Błąd przy pobieraniu danych");
         }
     } catch (error) {
-        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
-        return pop;
+        tableBody.innerHTML = "<tr><td colspan='7'>Błąd przy pobieraniu danych</td></tr>";
+        console.error("Błąd przy pobieraniu danych", error);
     }
 }
-
-async function crossover(pop, pk) {
-    const requestData = { pop: pop, pk: pk };
-    try {
-        const response = await fetch("/crossover", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestData)
-        });
-
-        
-        if (response.ok) {
-            const data = await response.json();
-
-
-            data.population.forEach((individual) => {
-                const row = document.getElementById(individual.id);
-                if (row) {
-                    row.cells[9].textContent = individual.parent
-                    if (individual.pc == 0) {
-                        row.cells[10].textContent = '-'
-                    } else if (individual.id == data.backup_id) {
-                        row.cells[10].textContent = `${individual.pc},${data.backup_pc}`
-                        let expl = document.getElementById('expl')
-                        expl.innerText = `Osobnik z ID ${data.backup_id} został poddany krzyżowaniu drugi raz, ponieważ liczba rodziców była nieparzysta i ostatni został bez pary.`
-                    }
-                    else {
-                        row.cells[10].textContent = individual.pc
-                    }
-                    row.cells[11].textContent = individual.child
-                    row.cells[12].textContent = individual.new_gen
-                }
-            });
-            return data.population;
-        } else {
-            console.log("Błąd przy pobieraniu danych z /selection");
-            return pop;
-        }
-    } catch (error) {
-        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
-        return pop;
-    }
-}
-
-async function mutation(pop, a, b) {
-    let pm = parseFloat(document.getElementById('pm').value)
-    const d = parseFloat(document.getElementById("precision").value); 
-
-    const requestData = {pop: pop, pm: pm, a: a, b: b, d: d};
-
-    try {
-        const response = await fetch("/mutation", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestData)
-        });
-
-        
-        if (response.ok) {
-            const data = await response.json();
-
-
-            data.population.forEach((individual) => {
-                const row = document.getElementById(individual.id);
-                if (row) {
-                    if (individual.mutated_genes == null) {
-                        row.cells[13].textContent = "-"
-                    } else {
-                        row.cells[13].textContent = individual.mutated_genes
-                    }
-                    row.cells[14].textContent = individual.final_gen
-                    row.cells[15].textContent = individual.final_x_real.toFixed(prec)
-                    row.cells[16].textContent = individual.final_fx.toFixed(prec)
-                }
-            });
-            return data.population;
-        } else {
-            console.log("Błąd przy pobieraniu danych z /selection");
-            return pop;
-        }
-        
-    } catch (error) {
-        console.error("Błąd przy przetwarzaniu odpowiedzi /selection", error);
-        return pop;
-    }
-}
-

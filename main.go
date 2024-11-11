@@ -27,9 +27,9 @@ func main() {
 
 // funkcja oceny
 func evalFunc(x float64) float64 {
-	// mod := x - math.Floor(x)
-	// return mod * (math.Cos(20*math.Pi*x) - math.Sin(x))
-	return -(x + 1) * (x - 1) * (x - 2)
+	mod := x - math.Floor(x)
+	return mod * (math.Cos(20*math.Pi*x) - math.Sin(x))
+	// return -(x + 1) * (x - 1) * (x - 2)
 }
 
 func calculate(w http.ResponseWriter, r *http.Request) {
@@ -43,20 +43,66 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var population []*Individual
+	var statsSummary []*GenerationStats
+
+	population, statsSummary = calculateGenerations(&payload)
+
+	var results = make(map[float64]*FinalResult)
+
+	for _, ind := range population {
+		res, ok := results[ind.FinalFx]
+		if !ok {
+			results[ind.FinalFx] = &FinalResult{
+				XReal:   ind.FinalXReal,
+				XBin:    ind.FinalGen,
+				Fx:      ind.FinalFx,
+				Count:   1,
+				Percent: (1.0 / float64(len(population))) * 100,
+			}
+		} else {
+			res.Count += 1
+			res.Percent = (float64(res.Count) / float64(len(population))) * 100
+		}
+	}
+
+	var finalResults []*FinalResult
+	for _, v := range results {
+		finalResults = append(finalResults, v)
+	}
+
+	// formatowanie odpowiedzi do formatu JSON
+	rsp := CalculationResult{
+		Population:   population,
+		GenStats:     statsSummary,
+		FinalGenData: finalResults,
+	}
+	err = json.NewEncoder(w).Encode(rsp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	}
+}
+
+func calculateGenerations(payload *CalculationPayload) ([]*Individual, []*GenerationStats) {
 	a := payload.A
 	b := payload.B
 	d := payload.D
 	N := payload.N
+	T := payload.T
+	pk := payload.Pk
+	pm := payload.Pm
 
-	// kalkulacja liczby bitów
+	isElite := payload.Elite
+
+	// Calculate the number of bits
 	l = int(math.Ceil(math.Log2((b - a) / d)))
+	minFx := minF(a, b, d)
+
+	var individuals []*Individual
+	var genStatsSummary []*GenerationStats
 
 	var gSum float64 = 0
 
-	minFx := minF(a, b, d)
-
-	var result CalculationResult
-	result.L = l
 	for i := 1; i <= N; i++ {
 		xReal := math.Round((a+rand.Float64()*(b-a))/d) * d
 		xInt := realToInt(xReal, a, b)
@@ -66,26 +112,43 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 
 		gSum += gx
 
-		indiv := Individual{
+		indiv := &Individual{
 			ID:    i,
 			XReal: xReal,
 			Bin:   bin,
 			Fx:    fx,
 			Gx:    gx,
 		}
-		result.Population = append(result.Population, indiv)
-
+		individuals = append(individuals, indiv)
 	}
-	result.GSum = gSum
 
-	// formatowanie odpowiedzi do formatu JSON
-	err = json.NewEncoder(w).Encode(result)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	for i := 0; i < T; i++ {
+		gSum = 0
+		for _, ind := range individuals {
+			gSum += ind.Gx
+		}
+
+		var genStats *GenerationStats
+		individuals, genStats = genAlgorithm(a, b, d, pk, pm, minFx, gSum, individuals, isElite)
+		genStatsSummary = append(genStatsSummary, genStats)
 	}
+	return individuals, genStatsSummary
 }
 
-func selection(gSum, a, b float64, individuals []*Individual) []*Individual {
+func algTest(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func genAlgorithm(a, b, d, pk, pm, minFx, gSum float64, individuals []*Individual, isElite bool) ([]*Individual, *GenerationStats) {
+
+	selection(gSum, a, b, individuals)
+	crossover(individuals, pk)
+	genStats := mutationAndStatsNote(pm, a, b, d, minFx, individuals, isElite)
+
+	return individuals, genStats
+}
+
+func selection(gSum, a, b float64, individuals []*Individual) {
 
 	var pSum float64 = 0
 
@@ -113,11 +176,9 @@ func selection(gSum, a, b float64, individuals []*Individual) []*Individual {
 		}
 	}
 
-	return individuals
-
 }
 
-func crossover(individuals []*Individual, pk float64) []*Individual {
+func crossover(individuals []*Individual, pk float64) {
 
 	// incjalizacja danych krzyżowania osobnikóœ
 	for i := 0; i < len(individuals); i++ {
@@ -165,10 +226,11 @@ func crossover(individuals []*Individual, pk float64) []*Individual {
 
 		backupInd = secondParent
 	}
-	return individuals
 }
 
-func mutation(pm, a, b, d float64, individuals []*Individual) []*Individual {
+func mutationAndStatsNote(pm, a, b, d, minFx float64, individuals []*Individual, isElite bool) *GenerationStats {
+
+	var fMin, fMax, fSum, fAvg, bestXReal, bestFx float64
 
 	for i := 0; i < len(individuals); i++ {
 		ind := individuals[i]
@@ -189,9 +251,52 @@ func mutation(pm, a, b, d float64, individuals []*Individual) []*Individual {
 		ind.FinalXReal = intToReal(binToInt(ind.FinalGen), a, b)
 		ind.FinalXReal = math.Round(ind.FinalXReal/d) * d
 		ind.FinalFx = evalFunc(ind.FinalXReal)
+
+		if ind.Fx > bestFx {
+			bestFx = ind.Fx
+			bestXReal = ind.XReal
+		}
 	}
 
-	return individuals
+	randVal := rand.Intn(len(individuals))
+	randomInd := individuals[randVal]
+	if isElite && randomInd.FinalFx < bestFx {
+		randomInd.XReal = bestXReal
+		randomInd.Fx = bestFx
+		randomInd.FinalFx = bestFx
+		randomInd.FinalXReal = bestXReal
+		randomInd.XInt = realToInt(bestXReal, a, b)
+		randomInd.Bin = intToBin(randomInd.XInt)
+		randomInd.Gx = g(randomInd.Fx, minFx, d)
+	}
+
+	for _, ind := range individuals {
+		ind.XReal = ind.FinalXReal
+		ind.XInt = realToInt(ind.XReal, a, b)
+		ind.Bin = ind.FinalGen
+		ind.Fx = ind.FinalFx
+		ind.Gx = g(ind.Fx, minFx, d)
+
+		if ind.FinalFx < fMin {
+			fMin = ind.FinalFx
+		}
+		if ind.FinalFx > fMax {
+			fMax = ind.FinalFx
+		}
+		fSum += ind.FinalFx
+	}
+
+	fAvg = fSum / float64(len(individuals))
+
+	genStats := &GenerationStats{
+		FMin:     fMin,
+		FMax:     fMax,
+		FAvg:     fAvg,
+		Elite:    bestFx,
+		EliteInd: randVal,
+	}
+
+	return genStats
 
 }
 
