@@ -12,17 +12,6 @@ type CalculationPayload struct {
 	Elite bool    `json:"elite"`
 }
 
-type TestPayload struct {
-	A     float64 `json:"a"`
-	B     float64 `json:"b"`
-	D     float64 `json:"d"`
-	N     int     `json:"N"`
-	T     int     `json:"T"`
-	Pk    float64 `json:"pk"`
-	Pm    float64 `json:"pm"`
-	Elite bool    `json:"elite"`
-}
-
 // responses
 type CalculationResult struct {
 	Population   []*Individual      `json:"population"`
@@ -44,6 +33,14 @@ type FinalResult struct {
 	Fx      float64 `json:"fx"`
 	Percent float64 `json:"percent"`
 	Count   int     `json:"count"`
+}
+
+type TestResult struct {
+	N    int     `json:"N"`
+	T    int     `json:"T"`
+	Pk   float64 `json:"pk"`
+	Pm   float64 `json:"pm"`
+	FAvg float64 `json:"f_avg"`
 }
 
 type Individual struct {
