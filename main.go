@@ -7,10 +7,15 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
 var l int // liczba bitów
+
+var testStarted = false
+var resultsChan = make(chan *TestResult)
+var done = make(chan struct{})
 
 func main() {
 	config := loadConfig()
@@ -137,56 +142,105 @@ func calculateGenerations(payload *CalculationPayload) ([]*Individual, []*Genera
 }
 
 func algTest(w http.ResponseWriter, r *http.Request) {
+	if !testStarted {
 
-	var a float64 = -4
-	var b float64 = 12
-	var d float64 = 0.001
-	N := []int{30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80}
-	pk := []float64{0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9}
-	T := []int{50, 60, 70, 80, 90, 100}
-	pm := []float64{0.0001, 0.0005, 0.001, 0.005, 0.01}
+		a, b, d := -4.0, 12.0, 0.001
+		N := []int{30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80}
+		pk := []float64{0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9}
+		T := []int{50, 60, 70, 80, 90, 100}
+		pm := []float64{0.0001, 0.0005, 0.001, 0.005, 0.01}
 
-	var bestResults []*TestResult
+		testStarted = true
 
-	// Generate test cases and calculate fAvg for each
+		go runTest(a, b, d, N, pk, T, pm)
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	go func() {
+		var bestRes TestResult
+		for result := range resultsChan {
+			flag := false
+			if result.FAvg > bestRes.FAvg {
+				flag = true
+
+			} else if result.FAvg == bestRes.FAvg {
+				resParams := result.T + result.N
+				bestParams := bestRes.T + bestRes.N
+				if resParams < bestParams {
+					flag = true
+				}
+			}
+			fmt.Println(result.FAvg, result.N, result.T)
+			if flag {
+				bestRes = *result
+				data, err := json.Marshal(result)
+				if err == nil {
+					fmt.Fprintf(w, "data: %s\n\n", data)
+					w.(http.Flusher).Flush()
+				}
+			}
+		}
+		done <- struct{}{}
+	}()
+
+	<-done
+}
+
+func runTest(a, b, d float64, N []int, pk []float64, T []int, pm []float64) {
+	var wg sync.WaitGroup
+
+	sem := make(chan struct{}, 16)
+
 	for _, n := range N {
 		for _, t := range T {
 			for _, pkVal := range pk {
 				for _, pmVal := range pm {
-					var bestCase TestResult
-					for i := 0; i < 100; i++ {
-						_, genStats := calculateGenerations(&CalculationPayload{
-							A:     a,
-							B:     b,
-							D:     d,
-							N:     n,
-							Pk:    pkVal,
-							Pm:    pmVal,
-							T:     t,
-							Elite: true,
-						})
-						if genStats[t-1].FAvg > bestCase.FAvg {
-							bestCase.N = n
-							bestCase.Pk = pkVal
-							bestCase.Pm = pmVal
-							bestCase.T = t
-							bestCase.FAvg = genStats[t-1].FAvg
-						}
-					}
+					wg.Add(1)
 
-					bestResults = append(bestResults, &bestCase)
+					sem <- struct{}{}
+
+					go func(n, t int, pkVal, pmVal float64) {
+						defer func() {
+							<-sem
+							wg.Done()
+						}()
+
+						var localBestResult TestResult
+						for i := 0; i < 100; i++ {
+							_, genStats := calculateGenerations(&CalculationPayload{
+								A:     a,
+								B:     b,
+								D:     d,
+								N:     n,
+								Pk:    pkVal,
+								Pm:    pmVal,
+								T:     t,
+								Elite: true,
+							})
+
+							if genStats[t-1].FAvg > localBestResult.FAvg {
+								localBestResult = TestResult{
+									N:    n,
+									T:    t,
+									Pk:   pkVal,
+									Pm:   pmVal,
+									FAvg: genStats[t-1].FAvg,
+								}
+							}
+						}
+
+						resultsChan <- &localBestResult
+					}(n, t, pkVal, pmVal)
 				}
 			}
 		}
 	}
 
-	var bestCase *TestResult
-	for _, res := range bestResults {
-		if res.FAvg > bestCase.FAvg {
-			bestCase = res
-		}
-	}
-
+	wg.Wait()
+	close(resultsChan)
 }
 
 func genAlgorithm(a, b, d, pk, pm, minFx, gSum float64, individuals []*Individual, isElite bool) ([]*Individual, *GenerationStats) {

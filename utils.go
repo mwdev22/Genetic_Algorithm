@@ -56,7 +56,7 @@ func initializeRouter(config *Config) *http.ServeMux {
 		http.ServeFile(w, r, config.indexPath)
 	})
 	mux.HandleFunc("/calculate", calculate)
-	mux.HandleFunc("/test", algTest)
+	mux.HandleFunc("/alg_test", algTest)
 
 	return mux
 }
@@ -80,7 +80,7 @@ func modeName(isProduction bool) string {
 // restrykcja ścieżek
 func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "/mutation", "/crossover"}
+		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "/mutation", "/crossover", "/alg_test"}
 		for _, path := range allowedPaths {
 			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
 				next.ServeHTTP(w, r)

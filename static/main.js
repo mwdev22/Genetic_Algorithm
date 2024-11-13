@@ -1,21 +1,80 @@
 let myChart;  
 let prec = 2
 
+
+document.addEventListener("DOMContentLoaded", () => {
+    const bestResultContainer = document.getElementById("best-result");
+
+    // Connect to the SSE endpoint
+    const eventSource = new EventSource("/alg_test");
+
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+
+        console.log("Received data:", data);
+
+        bestResultContainer.innerHTML = `
+            <h2>Current Best Result:</h2>
+            <p><strong>N:</strong> ${data.N}</p>
+            <p><strong>Pk:</strong> ${data.pk.toFixed(2)}</p>
+            <p><strong>Pm:</strong> ${data.pm.toFixed(5)}</p>
+            <p><strong>T:</strong> ${data.T}</p>
+            <p><strong>FAvg:</strong> ${data.f_avg.toFixed(4)}</p>
+        `;
+    };
+
+    // Handle errors (e.g., connection issues)
+    eventSource.onerror = function(err) {
+        console.error("EventSource failed:", err);
+        eventSource.close();
+    };
+});
+
 function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(tabContent => {
-        tabContent.classList.remove('active');
-    });
-
-    document.querySelectorAll('.tabs div').forEach(tabElement => {
-        tabElement.classList.remove('active');
-    });
-    document.getElementById('tab-' + tab).classList.add('active');
-
-    if (tab === 'plot') {
-        document.querySelector('.plot-content').classList.add('active');
-    } else {
-        document.querySelector('.table-content').classList.add('active');
+        // Remove 'active' class from all tab contents
+        document.querySelectorAll('.tab-content').forEach(tabContent => {
+            tabContent.classList.remove('active');
+        });
+    
+        // Remove 'active' class from all tabs
+        document.querySelectorAll('.tabs div').forEach(tabElement => {
+            tabElement.classList.remove('active');
+        });
+    
+        // Add 'active' class to the selected tab and content
+        document.getElementById('tab-' + tab).classList.add('active');
+        if (tab === 'plot') {
+            document.querySelector('.plot-content').classList.add('active');
+        } else if (tab === 'table') {
+            document.querySelector('.table-content').classList.add('active');
+        } else if (tab === 'best-result') {
+            document.querySelector('.best-result-content').classList.add('active');
+        }
     }
+
+
+async function algTest() {
+
+    try {
+        const response = await fetch("/alg_test", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "data":"test"
+            })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            console.log(data)
+        } else {
+            console.error("Błąd przy pobieraniu danych");
+        }
+    } catch (error) {
+        console.error("Błąd przy pobieraniu danych", error);
+    }
+    
 }
 
 async function calculate() {
