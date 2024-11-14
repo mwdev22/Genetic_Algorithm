@@ -153,6 +153,8 @@ func algTest(w http.ResponseWriter, r *http.Request) {
 		testStarted = true
 
 		go runTest(a, b, d, N, pk, T, pm)
+		w.Write([]byte("test started"))
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -160,29 +162,35 @@ func algTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 
 	go func() {
-		var bestRes TestResult
-		for result := range resultsChan {
-			flag := false
-			if result.FAvg > bestRes.FAvg {
-				flag = true
+		var bestResults = make(map[float64]TestResult)
 
-			} else if result.FAvg == bestRes.FAvg {
-				resParams := result.T + result.N
+		for result := range resultsChan {
+			bestRes, exists := bestResults[result.FAvg]
+			sendResult := true
+
+			if exists {
+
+				currentParams := result.T + result.N
 				bestParams := bestRes.T + bestRes.N
-				if resParams < bestParams {
-					flag = true
+				if currentParams >= bestParams {
+					sendResult = false
+				} else {
+					bestResults[result.FAvg] = *result
 				}
 			}
-			fmt.Println(result.FAvg, result.N, result.T)
-			if flag {
-				bestRes = *result
+
+			if sendResult {
+				bestResults[result.FAvg] = *result
 				data, err := json.Marshal(result)
 				if err == nil {
 					fmt.Fprintf(w, "data: %s\n\n", data)
 					w.(http.Flusher).Flush()
 				}
 			}
+
+			fmt.Println(result.FAvg, result.N, result.T)
 		}
+
 		done <- struct{}{}
 	}()
 

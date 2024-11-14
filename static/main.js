@@ -1,11 +1,9 @@
 let myChart;  
 let prec = 2
 
+function startListeningForResults() {
+    const resultsTableBody = document.getElementById("results-table").querySelector("tbody");
 
-document.addEventListener("DOMContentLoaded", () => {
-    const bestResultContainer = document.getElementById("best-result");
-
-    // Connect to the SSE endpoint
     const eventSource = new EventSource("/alg_test");
 
     eventSource.onmessage = function(event) {
@@ -13,22 +11,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
         console.log("Received data:", data);
 
-        bestResultContainer.innerHTML = `
-            <h2>Current Best Result:</h2>
-            <p><strong>N:</strong> ${data.N}</p>
-            <p><strong>Pk:</strong> ${data.pk.toFixed(2)}</p>
-            <p><strong>Pm:</strong> ${data.pm.toFixed(5)}</p>
-            <p><strong>T:</strong> ${data.T}</p>
-            <p><strong>FAvg:</strong> ${data.f_avg.toFixed(4)}</p>
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${data.N}</td>
+            <td>${data.pk.toFixed(2)}</td>
+            <td>${data.pm.toFixed(5)}</td>
+            <td>${data.T}</td>
+            <td>${data.f_avg}</td>
         `;
+
+        resultsTableBody.appendChild(row);
+
+        sortTableByFAvg();
     };
 
-    // Handle errors (e.g., connection issues)
+    function sortTableByFAvg() {
+        const rows = Array.from(resultsTableBody.querySelectorAll("tr"));
+        
+        rows.sort((a, b) => {
+            const favgA = parseFloat(a.cells[4].textContent);
+            const favgB = parseFloat(b.cells[4].textContent);
+            return favgB - favgA;
+        });
+
+        rows.forEach(row => resultsTableBody.appendChild(row));
+    }
+
     eventSource.onerror = function(err) {
         console.error("EventSource failed:", err);
         eventSource.close();
     };
-});
+};
+
 
 function switchTab(tab) {
         // Remove 'active' class from all tab contents
@@ -66,8 +80,9 @@ async function algTest() {
             })
         });
         if (response.ok) {
-            const data = await response.json();
+            const data = await response.text();
             console.log(data)
+            startListeningForResults();
         } else {
             console.error("Błąd przy pobieraniu danych");
         }

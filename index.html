@@ -55,9 +55,9 @@
     </div>
 
     <div class="tabs">
-        <div id="tab-plot" class="active" onclick="switchTab('plot')">Plot</div>
-        <div id="tab-table" onclick="switchTab('table')">Stats Table</div>
-        <div id="tab-best-result" onclick="switchTab('best-result')">Best Result</div>
+        <div id="tab-plot" class="active" onclick="switchTab('plot')">Wykres</div>
+        <div id="tab-table" onclick="switchTab('table')">Dane</div>
+        <div id="tab-best-result" onclick="switchTab('best-result')">Test</div>
     </div>
 
     <div class="tab-content plot-content active">
@@ -73,8 +73,8 @@
                     <th>X Real</th>
                     <th>X Bin</th>
                     <th>Fx</th>
-                    <th>Percent</th>
-                    <th>Count</th>
+                    <th>Procent</th>
+                    <th>Liczebność wyniku</th>
                 </tr>
             </thead>
             <tbody id="table-body">
@@ -85,12 +85,20 @@
 
     <div class="tab-content best-result-content" id="best-result">
         <button onclick="algTest()">TEST</button>
-        <h2>Current Best Result:</h2>
-        <p><strong>N:</strong> <span id="best-n">-</span></p>
-        <p><strong>Pk:</strong> <span id="best-pk">-</span></p>
-        <p><strong>Pm:</strong> <span id="best-pm">-</span></p>
-        <p><strong>T:</strong> <span id="best-t">-</span></p>
-        <p><strong>FAvg:</strong> <span id="best-fAvg">-</span></p>
+        <table id="results-table" border="1">
+            <thead>
+                <tr>
+                    <th>N</th>
+                    <th>Pk</th>
+                    <th>Pm</th>
+                    <th>T</th>
+                    <th>fAvg</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here dynamically -->
+            </tbody>
+        </table>
     </div>
     
 
