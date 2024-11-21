@@ -100,7 +100,7 @@ func calculateGenerations(payload *CalculationPayload) ([]*Individual, []*Genera
 
 	isElite := payload.Elite
 
-	// Calculate the number of bits
+	// calculate the number of bits
 	l = int(math.Ceil(math.Log2((b - a) / d)))
 	minFx := minF(a, b, d)
 
@@ -200,7 +200,7 @@ func algTest(w http.ResponseWriter, r *http.Request) {
 func runTest(a, b, d float64, N []int, pk []float64, T []int, pm []float64) {
 	var wg sync.WaitGroup
 
-	sem := make(chan struct{}, 16)
+	sem := make(chan struct{}, 8)
 
 	for _, n := range N {
 		for _, t := range T {
@@ -226,7 +226,7 @@ func runTest(a, b, d float64, N []int, pk []float64, T []int, pm []float64) {
 								Pk:    pkVal,
 								Pm:    pmVal,
 								T:     t,
-								Elite: true,
+								Elite: false,
 							})
 
 							if genStats[t-1].FAvg > localBestResult.FAvg {
@@ -238,6 +238,10 @@ func runTest(a, b, d float64, N []int, pk []float64, T []int, pm []float64) {
 									FAvg: genStats[t-1].FAvg,
 								}
 							}
+						}
+
+						if localBestResult.FAvg < 1.60 {
+							return
 						}
 
 						resultsChan <- &localBestResult
@@ -342,7 +346,8 @@ func crossover(individuals []*Individual, pk float64) {
 
 func mutationAndStatsNote(pm, a, b, d, minFx float64, individuals []*Individual, isElite bool) *GenerationStats {
 
-	var fMin, fMax, fSum, fAvg, bestXReal, bestFx float64
+	var fMax, fSum, fAvg, bestXReal, bestFx float64
+	var fMin float64 = 1_000_000
 
 	for i := 0; i < len(individuals); i++ {
 		ind := individuals[i]
@@ -389,7 +394,7 @@ func mutationAndStatsNote(pm, a, b, d, minFx float64, individuals []*Individual,
 		ind.Fx = ind.FinalFx
 		ind.Gx = g(ind.Fx, minFx, d)
 
-		if ind.FinalFx < fMin {
+		if ind.FinalFx <= fMin {
 			fMin = ind.FinalFx
 		}
 		if ind.FinalFx > fMax {
