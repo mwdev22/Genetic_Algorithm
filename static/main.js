@@ -96,15 +96,11 @@ async function calculate() {
     const a = parseFloat(document.getElementById("a").value);
     const b = parseFloat(document.getElementById("b").value);
     const d = parseFloat(document.getElementById("precision").value);
-    const N = parseInt(document.getElementById("N").value);
     const T = parseInt(document.getElementById("T").value);
-    const pk = parseFloat(document.getElementById("pk").value);
-    const pm = parseFloat(document.getElementById("pm").value);
-    const elite = document.getElementById("elite").checked;
 
     prec = d.toString().length - 2
 
-    const requestData = { a: a, b: b, d: d, T: T, N: N, pk: pk, pm: pm, elite: elite };
+    const requestData = { a: a, b: b, d: d, T: T };
 
 
 
