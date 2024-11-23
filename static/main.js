@@ -156,8 +156,10 @@ function generateChart(data) {
 
     const stepsByIteration = [];
     iterData.forEach((iter, genIndex) => {
+        const stepsLength = iter.Steps.length
+        const stepDivide = 1.0 / (stepsLength - 1)
         const steps = iter.Steps.map((step, stepIndex) => ({
-            x: genIndex + (stepIndex + 1) / (iter.Steps.length + 1),
+            x: genIndex + (stepIndex) * stepDivide,
             y: step.Fx,
         }));
         stepsByIteration.push(steps);
