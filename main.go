@@ -55,7 +55,6 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
 	}
 }
-
 func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 	var local bool = false
 	var itersData []*IterData
@@ -66,6 +65,9 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 	for i := 0; i < data.TMax; i++ {
 		local = false
 		randomNumber := rand.Float64()*(data.B-data.A) + data.A
+		// Round the random number to the nearest multiple of payload.D
+		randomNumber = roundToNearest(randomNumber, data.D)
+
 		xInt := realToInt(randomNumber, data.A, data.B)
 		xBin := intToBin(xInt)
 		vc := &Vc{
@@ -76,8 +78,14 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 		iterVcs := []*Vc{vc}
 		firstStep := &LocalStep{index: 1, Fx: vc.Fx}
 		localSteps := []*LocalStep{firstStep}
+		if i == 0 {
+			maxResults = append(maxResults, &MaxStep{
+				MaxFx: vc.Fx,
+				T:     i,
+			})
+		}
 		for !local {
-			bestNeigh := generateBestNeighbor(data.A, data.B, vc.XBin)
+			bestNeigh := generateBestNeighbor(data.A, data.B, data.D, vc.XBin)
 			fmt.Println(bestNeigh.Fx)
 			if bestNeigh.Fx > vc.Fx {
 				vc = &Vc{
@@ -103,18 +111,18 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 			Vcs:   iterVcs,
 			Steps: localSteps,
 		}
-		bestVc := iterVcs[len(localSteps)-1]
 		maxIterStep := &MaxStep{
-			T:     i,
-			Fx:    bestVc.Fx,
+			T:     i + 1,
 			MaxFx: maxVal,
 		}
 		maxResults = append(maxResults, maxIterStep)
 		itersData = append(itersData, iterationData)
 	}
+
 	return itersData, maxResults
 }
-func generateBestNeighbor(a, b float64, vc string) *Vn {
+
+func generateBestNeighbor(a, b, d float64, vc string) *Vn {
 	var bestNeigh Vn
 	for i := 0; i < len(vc); i++ {
 		newBin := []rune(vc)
@@ -125,6 +133,8 @@ func generateBestNeighbor(a, b float64, vc string) *Vn {
 			newBin[i] = '1'
 		}
 		xReal := intToReal(binToInt(string(newBin)), a, b)
+		// Round the XReal value to the nearest multiple of d
+		xReal = roundToNearest(xReal, d)
 		newV := &Vn{
 			XReal: xReal,
 			XBin:  string(newBin),
@@ -136,6 +146,10 @@ func generateBestNeighbor(a, b float64, vc string) *Vn {
 		}
 	}
 	return &bestNeigh
+}
+
+func roundToNearest(value, step float64) float64 {
+	return math.Round(value/step) * step
 }
 
 // konwersje liczb

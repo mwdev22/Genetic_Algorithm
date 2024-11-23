@@ -1,61 +1,56 @@
 let myChart;  
 let prec = 2
 
-function startListeningForResults() {
-    const resultsTableBody = document.getElementById("results-table").querySelector("tbody");
+// function startListeningForResults() {
+//     const resultsTableBody = document.getElementById("results-table").querySelector("tbody");
 
-    const eventSource = new EventSource("/alg_test");
+//     const eventSource = new EventSource("/alg_test");
 
-    eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
+//     eventSource.onmessage = function(event) {
+//         const data = JSON.parse(event.data);
 
-        console.log("Received data:", data);
+//         console.log("Received data:", data);
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${data.N}</td>
-            <td>${data.pk.toFixed(2)}</td>
-            <td>${data.pm.toFixed(5)}</td>
-            <td>${data.T}</td>
-            <td>${data.f_avg}</td>
-        `;
+//         const row = document.createElement("tr");
+//         row.innerHTML = `
+//             <td>${data.N}</td>
+//             <td>${data.T}</td>
+//             <td>${data.f_avg}</td>
+//         `;
 
-        resultsTableBody.appendChild(row);
+//         resultsTableBody.appendChild(row);
 
-        sortTableByFAvg();
-    };
+//         sortTableByFAvg();
+//     };
 
-    function sortTableByFAvg() {
-        const rows = Array.from(resultsTableBody.querySelectorAll("tr"));
+//     function sortTableByFAvg() {
+//         const rows = Array.from(resultsTableBody.querySelectorAll("tr"));
         
-        rows.sort((a, b) => {
-            const favgA = parseFloat(a.cells[4].textContent);
-            const favgB = parseFloat(b.cells[4].textContent);
-            return favgB - favgA;
-        });
+//         rows.sort((a, b) => {
+//             const favgA = parseFloat(a.cells[4].textContent);
+//             const favgB = parseFloat(b.cells[4].textContent);
+//             return favgB - favgA;
+//         });
 
-        rows.forEach(row => resultsTableBody.appendChild(row));
-    }
+//         rows.forEach(row => resultsTableBody.appendChild(row));
+//     }
 
-    eventSource.onerror = function(err) {
-        console.error("EventSource failed:", err);
-        eventSource.close();
-    };
-};
+//     eventSource.onerror = function(err) {
+//         console.error("EventSource failed:", err);
+//         eventSource.close();
+//     };
+// };
 
 
 function switchTab(tab) {
-        // Remove 'active' class from all tab contents
         document.querySelectorAll('.tab-content').forEach(tabContent => {
             tabContent.classList.remove('active');
         });
     
-        // Remove 'active' class from all tabs
         document.querySelectorAll('.tabs div').forEach(tabElement => {
             tabElement.classList.remove('active');
         });
     
-        // Add 'active' class to the selected tab and content
         document.getElementById('tab-' + tab).classList.add('active');
         if (tab === 'plot') {
             document.querySelector('.plot-content').classList.add('active');
@@ -67,30 +62,30 @@ function switchTab(tab) {
     }
 
 
-async function algTest() {
+// async function algTest() {
 
-    try {
-        const response = await fetch("/alg_test", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "data":"test"
-            })
-        });
-        if (response.ok) {
-            const data = await response.text();
-            console.log(data)
-            startListeningForResults();
-        } else {
-            console.error("Błąd przy pobieraniu danych");
-        }
-    } catch (error) {
-        console.error("Błąd przy pobieraniu danych", error);
-    }
+//     try {
+//         const response = await fetch("/alg_test", {
+//             method: "POST",
+//             headers: {
+//                 "Content-Type": "application/json"
+//             },
+//             body: JSON.stringify({
+//                 "data":"test"
+//             })
+//         });
+//         if (response.ok) {
+//             const data = await response.text();
+//             console.log(data)
+//             startListeningForResults();
+//         } else {
+//             console.error("Błąd przy pobieraniu danych");
+//         }
+//     } catch (error) {
+//         console.error("Błąd przy pobieraniu danych", error);
+//     }
     
-}
+// }
 
 async function calculate() {
     const a = parseFloat(document.getElementById("a").value);
@@ -98,116 +93,142 @@ async function calculate() {
     const d = parseFloat(document.getElementById("precision").value);
     const T = parseInt(document.getElementById("T").value);
 
-    prec = d.toString().length - 2
+    prec = d.toString().length - 2;
 
     const requestData = { a: a, b: b, d: d, T: T };
-
-
-
-    const tableBody = document.getElementById("table-body");
-    tableBody.innerHTML = "<tr><td colspan='5'>Ładowanie...</td></tr>";
 
     try {
         const response = await fetch("/calculate", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(requestData),
         });
-
+    
         if (response.ok) {
             const data = await response.json();
-            console.log(data)
-            const finalGenData = data.results;
-            tableBody.innerHTML = '';  
-            finalGenData.sort((a, b) => b.percent - a.percent);
-
-            finalGenData.forEach(result => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${result.x_real.toFixed(prec)}</td>
-                    <td>${result.x_bin}</td>
-                    <td>${result.fx}</td>
-                    <td>${result.percent.toFixed(prec)}</td>
-                    <td>${result.count}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-
-            const genStats = data.gen_stats;
-            const fmin = [];
-            const fmax = [];
-            const favg = [];
-
-            genStats.forEach(stat => {
-                fmin.push(stat.f_min);
-                fmax.push(stat.f_max);
-                favg.push(stat.f_avg);
-            });
-
+            console.log(data);
+    
             if (myChart) {
                 myChart.destroy();
             }
+    
+            generateChart(data);
+    
+            const tableBody = document.getElementById("table-body");
+            tableBody.innerHTML = ""; 
+    
+            data.vc_data.forEach((vcData, index) => {
+                const vcs = vcData.Vcs.map(vc => vc.x_real.toFixed(prec)).join(", ");
+                const bins = vcData.Vcs.map(vc => vc.x_bin).join(", ");
+                const fxs = vcData.Vcs.map(vc => vc.fx.toFixed(6)).join(", ");
+                const maxFx = data.max_results[index] ? data.max_results[index].MaxFx : "N/A";
+    
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${vcs}</td>
+                    <td>${bins}</td>
+                    <td>${fxs}</td>
+                    <td>${maxFx}</td>
+                `;
+    
+                tableBody.appendChild(row);
+            });
+    
+        
+        }
+    } catch (error) {
+        console.error("Błąd przy pobieraniu danych", error);
+    }
+    
+}
 
-            const chartData = {
-                labels: Array.from({ length: genStats.length }, (_, i) => i + 1),
-                datasets: [
-                    {
-                        label: 'FMin',
-                        data: fmin,
-                        borderColor: 'red',
-                        fill: false,
-                    },
-                    {
-                        label: 'FMax',
-                        data: fmax,
-                        borderColor: 'green',
-                        fill: false,
-                    },
-                    {
-                        label: 'FAvg',
-                        data: favg,
-                        borderColor: 'blue',
-                        fill: false,
-                    },
-                ],
-            };
+function generateChart(data) {
+    const maxResults = data.max_results;
+    const iterData = data.vc_data;
 
-            const ctx = document.getElementById('myChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Generation Index',
-                            },
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Value',
-                            },
+    const maxFxData = maxResults.map(maxStep => ({
+        x: maxStep.T,
+        y: maxStep.MaxFx,
+    }));
+
+    const stepsByIteration = [];
+    iterData.forEach((iter, genIndex) => {
+        const steps = iter.Steps.map((step, stepIndex) => ({
+            x: genIndex + (stepIndex + 1) / (iter.Steps.length + 1),
+            y: step.Fx,
+        }));
+        stepsByIteration.push(steps);
+    });
+
+    const ctx = document.getElementById("myChart").getContext("2d");
+
+    const IterationStepsDatasets = stepsByIteration.map((steps, index) => ({
+        label: `Vc przy t = ${index}`,
+        data: steps,
+        borderColor: "rgba(0, 0, 255, 0.5)",
+        showLine: true,
+        fill: false,
+        tension: 0.1,
+        pointRadius: 2,
+    }));
+
+    const allDatasets = [
+        {
+            label: "MaxFx dla iteracji",
+            data: maxFxData,
+            borderColor: "red",
+            fill: false,
+            showLine: true,
+            tension: 0.1,
+        },
+        ...IterationStepsDatasets,
+    ];
+
+    myChart = new Chart(ctx, {
+        type: "scatter",
+        data: {
+            datasets: allDatasets,
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: "top",
+                    labels: {
+                        filter: function (legendItem, chartData) {
+                            return legendItem.text === "MaxFx dla iteracji";
                         },
                     },
                 },
-            });
-
-        } else {
-            tableBody.innerHTML = "<tr><td colspan='5'>Błąd przy pobieraniu danych</td></tr>";
-            console.error("Błąd przy pobieraniu danych");
-        }
-    } catch (error) {
-        tableBody.innerHTML = "<tr><td colspan='5'>Błąd przy pobieraniu danych</td></tr>";
-        console.error("Błąd przy pobieraniu danych", error);
-    }
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const { dataset, raw } = context;
+                            return `${dataset.label}: (${raw.x}, ${raw.y})`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: "Iteration (T)",
+                    },
+                    ticks: {
+                        stepSize: 1, 
+                    },
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: "Fx Values",
+                    },
+                },
+            },
+        },
+    });
 }

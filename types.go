@@ -27,7 +27,6 @@ type Vn struct {
 
 type MaxStep struct {
 	T     int
-	Fx    float64
 	MaxFx float64
 }
 
