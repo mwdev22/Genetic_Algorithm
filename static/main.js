@@ -1,46 +1,6 @@
 let myChart;  
+let testChart;
 let prec = 2
-
-// function startListeningForResults() {
-//     const resultsTableBody = document.getElementById("results-table").querySelector("tbody");
-
-//     const eventSource = new EventSource("/alg_test");
-
-//     eventSource.onmessage = function(event) {
-//         const data = JSON.parse(event.data);
-
-//         console.log("Received data:", data);
-
-//         const row = document.createElement("tr");
-//         row.innerHTML = `
-//             <td>${data.N}</td>
-//             <td>${data.T}</td>
-//             <td>${data.f_avg}</td>
-//         `;
-
-//         resultsTableBody.appendChild(row);
-
-//         sortTableByFAvg();
-//     };
-
-//     function sortTableByFAvg() {
-//         const rows = Array.from(resultsTableBody.querySelectorAll("tr"));
-        
-//         rows.sort((a, b) => {
-//             const favgA = parseFloat(a.cells[4].textContent);
-//             const favgB = parseFloat(b.cells[4].textContent);
-//             return favgB - favgA;
-//         });
-
-//         rows.forEach(row => resultsTableBody.appendChild(row));
-//     }
-
-//     eventSource.onerror = function(err) {
-//         console.error("EventSource failed:", err);
-//         eventSource.close();
-//     };
-// };
-
 
 function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(tabContent => {
@@ -62,30 +22,115 @@ function switchTab(tab) {
     }
 
 
-// async function algTest() {
+async function algTest() {
+    try {
+        const response = await fetch("/alg_test", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "data": "test"
+            })
+        });
 
-//     try {
-//         const response = await fetch("/alg_test", {
-//             method: "POST",
-//             headers: {
-//                 "Content-Type": "application/json"
-//             },
-//             body: JSON.stringify({
-//                 "data":"test"
-//             })
-//         });
-//         if (response.ok) {
-//             const data = await response.text();
-//             console.log(data)
-//             startListeningForResults();
-//         } else {
-//             console.error("Błąd przy pobieraniu danych");
-//         }
-//     } catch (error) {
-//         console.error("Błąd przy pobieraniu danych", error);
-//     }
+        if (response.ok) {
+            const data = await response.json(); 
+            console.log(data); 
+
+            generateTestChart(data);
+            generateStatsTable(data);
+        } else {
+            console.error("Błąd przy pobieraniu danych");
+        }
+    } catch (error) {
+        console.error("Błąd przy pobieraniu danych", error);
+    }
+}
+
+function generateStatsTable(data) {
+    const statsMap = data.stats_map;  
+    const percentages = data.percentages
+    const tableBody = document.getElementById('test-table-body')
+
+    tableBody.innerHTML = '';
+
+    const row = document.createElement("tr");
+
+    const fullWidthCell = document.createElement("td");
+    fullWidthCell.colSpan = 5;  
+    fullWidthCell.innerText = `Spośród 1000 prób sukces osiągnęło ${data.success_sum}`;
     
-// }
+    row.appendChild(fullWidthCell);
+    tableBody.appendChild(row);
+
+
+    for (let iteration in statsMap) {
+        const row = document.createElement("tr");
+        const iterationCell = document.createElement("td");
+        const successCountCell = document.createElement("td");
+        const percentageCell = document.createElement("td");
+
+        iterationCell.textContent = iteration; 
+        successCountCell.textContent = statsMap[iteration]; 
+        percentageCell.textContent = (percentages[iteration] * 100).toFixed(3); 
+
+        row.appendChild(iterationCell);
+        row.appendChild(percentageCell);
+        row.appendChild(successCountCell);
+        tableBody.appendChild(row);
+    }
+}
+
+function generateTestChart(data) {
+    const percentages = data.percentages;  
+    const iterations = Object.keys(percentages); 
+    const values = Object.values(percentages).map(p => p * 100); 
+
+    if (testChart) {
+        testChart.destroy();
+    }
+
+
+    const ctx = document.getElementById("test-plot").getContext("2d");
+    testChart = new Chart(ctx, {
+        type: 'line',  
+        data: {
+            labels: iterations,  
+            datasets: [{
+                label: 'Procent sukcesów',
+                data: values,  
+                borderColor: 'rgba(75, 192, 192, 1)', 
+                fill: false,  
+                tension: 0.1  
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Iteracja'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Procent sukcesów (%)'
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        max: 100, 
+                        stepSize: 5  
+                    }
+                }
+            }
+        }
+    });
+}
+
+
 
 async function calculate() {
     const a = parseFloat(document.getElementById("a").value);
@@ -234,3 +279,4 @@ function generateChart(data) {
         },
     });
 }
+

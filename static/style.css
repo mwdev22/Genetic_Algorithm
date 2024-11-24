@@ -166,3 +166,24 @@ tr:hover {
 .tab-content button {
     margin: 12px;
 }
+
+.test-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin: 20px auto;
+    margin-bottom: 40px;
+}
+
+.test-content .plotDiv {
+    width: 70%;  
+    margin-right: 20px;  
+}
+
+.test-content .table-content {
+    width: 25%;  
+    overflow-y: auto;
+    max-height: 80vh;
+}
+

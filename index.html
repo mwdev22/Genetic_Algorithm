@@ -22,9 +22,9 @@
 
             <label for="precision">Dokładność (d):</label>
             <select id="precision">
-                <option value="0.1" selected>0.1</option>
+                <option value="0.1">0.1</option>
                 <option value="0.01">0.01</option>
-                <option value="0.001">0.001</option>
+                <option value="0.001" selected>0.001</option>
             </select>
 
 
@@ -67,21 +67,28 @@
 
     <div class="tab-content best-result-content" id="best-result">
         <button onclick="algTest()">TEST</button>
-        <table id="results-table" border="1">
-            <thead>
-                <tr>
-                    <th>N</th>
-                    <th>Pk</th>
-                    <th>Pm</th>
-                    <th>T</th>
-                    <th>fAvg</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be added here dynamically -->
-            </tbody>
-        </table>
+    
+        <div class="test-content">
+            <div class="plotDiv">
+                <canvas id="test-plot"></canvas>
+            </div>
+            <div class="table-content">
+                <table class="test-t">
+                    <thead>
+                        <tr>
+                            <th>T</th>
+                            <th>Procent</th>
+                            <th>Ilość sukcesów</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-table-body">
+                        <!-- Table will be dynamically populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
+    
     
 
 </body>

@@ -56,6 +56,7 @@ func initializeRouter(config *Config) *http.ServeMux {
 		http.ServeFile(w, r, config.indexPath)
 	})
 	mux.HandleFunc("/calculate", calculate)
+	mux.HandleFunc("/alg_test", algTest)
 
 	return mux
 }

@@ -12,6 +12,11 @@ type CalculationResponse struct {
 	VcData     []*IterData `json:"vc_data"`
 	MaxResults []*MaxStep  `json:"max_results"`
 }
+type TestResponse struct {
+	StatsMap    map[int]int     `json:"stats_map"`
+	Percentages map[int]float64 `json:"percentages"`
+	SuccessSum  int             `json:"success_sum"`
+}
 
 type Vc struct {
 	XReal float64 `json:"x_real"`

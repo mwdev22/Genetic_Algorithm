@@ -7,10 +7,16 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"sort"
+	"sync"
 	"time"
 )
 
 var l int // liczba bitów
+var (
+	testStarted bool       // Global variable, synchronized via mutex
+	mu          sync.Mutex // Mutex for thread-safe access to testStarted
+)
 
 func main() {
 	config := loadConfig()
@@ -55,6 +61,110 @@ func calculate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
 	}
 }
+
+func algTest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var payload = &CalculationPayload{
+		A:    -4,
+		B:    12,
+		D:    0.001,
+		TMax: 100,
+	}
+	l = int(math.Ceil(math.Log2((payload.B - payload.A) / payload.D)))
+
+	testStarted = true
+
+	statsMap, successSum := runTest(payload)
+	sortedMap, percentages := prepareMap(statsMap, successSum)
+	rsp := &TestResponse{
+		StatsMap:    sortedMap,
+		Percentages: percentages,
+		SuccessSum:  successSum,
+	}
+	err := json.NewEncoder(w).Encode(rsp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
+	}
+}
+func prepareMap(m map[int]int, totalIterations int) (map[int]int, map[int]float64) {
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	sorted := make(map[int]int, len(m))
+	percentages := make(map[int]float64, len(m))
+	var percentSum float64 = 0
+
+	for _, k := range keys {
+		sorted[k] = m[k]
+		percentages[k] = float64(m[k]) / float64(totalIterations)
+		percentSum += percentages[k]
+	}
+
+	percentages[0] = 0.0
+	return sorted, percentages
+}
+
+func runTest(data *CalculationPayload) (map[int]int, int) {
+	const funcMaximum = 1.9960228398204862
+
+	var wg sync.WaitGroup
+	statsMap := make(map[int]int)
+	statsMapMutex := sync.Mutex{}
+
+	worker := func() {
+		defer wg.Done()
+		local := false
+		for i := 1; i <= data.TMax; i++ {
+			local = false
+			randomNumber := rand.Float64()*(float64(data.B)-float64(data.A)) + float64(data.A)
+			randomNumber = roundToNearest(randomNumber, data.D)
+
+			xInt := realToInt(randomNumber, data.A, data.B)
+			xBin := intToBin(xInt)
+			vc := &Vc{
+				XReal: randomNumber,
+				XBin:  xBin,
+				Fx:    F(randomNumber),
+			}
+			for !local {
+				bestNeigh := generateBestNeighbor(data.A, data.B, data.D, vc.XBin)
+				if bestNeigh.Fx > vc.Fx {
+					vc = &Vc{
+						XBin:  bestNeigh.XBin,
+						XReal: bestNeigh.XReal,
+						Fx:    bestNeigh.Fx,
+					}
+
+				} else {
+					local = true
+				}
+			}
+			if vc.Fx >= funcMaximum {
+				statsMapMutex.Lock()
+				statsMap[i] += 1
+				statsMapMutex.Unlock()
+				break
+			}
+		}
+	}
+
+	for i := 1; i <= 1000; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	wg.Wait()
+	sum := 0
+	for _, v := range statsMap {
+		sum += v
+	}
+	return statsMap, sum
+}
+
 func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 	var local bool = false
 	var itersData []*IterData
@@ -65,7 +175,6 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 	for i := 0; i < data.TMax; i++ {
 		local = false
 		randomNumber := rand.Float64()*(data.B-data.A) + data.A
-		// Round the random number to the nearest multiple of payload.D
 		randomNumber = roundToNearest(randomNumber, data.D)
 
 		xInt := realToInt(randomNumber, data.A, data.B)
@@ -86,7 +195,6 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 		}
 		for !local {
 			bestNeigh := generateBestNeighbor(data.A, data.B, data.D, vc.XBin)
-			fmt.Println(bestNeigh.Fx)
 			if bestNeigh.Fx > vc.Fx {
 				vc = &Vc{
 					XBin:  bestNeigh.XBin,
@@ -100,7 +208,6 @@ func findMaximumGrowth(data *CalculationPayload) ([]*IterData, []*MaxStep) {
 				}
 				localSteps = append(localSteps, newStep)
 			} else {
-				fmt.Println(vc.Fx, bestNeigh.Fx)
 				if vc.Fx > maxVal {
 					maxVal = vc.Fx
 				}
