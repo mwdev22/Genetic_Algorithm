@@ -263,7 +263,7 @@ function generateChart(data) {
                 x: {
                     title: {
                         display: true,
-                        text: "Iteration (T)",
+                        text: "Iteracje (T)",
                     },
                     ticks: {
                         stepSize: 1, 
@@ -272,7 +272,7 @@ function generateChart(data) {
                 y: {
                     title: {
                         display: true,
-                        text: "Fx Values",
+                        text: "Wartości funkcji",
                     },
                 },
             },

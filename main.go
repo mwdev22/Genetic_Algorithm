@@ -13,10 +13,6 @@ import (
 )
 
 var l int // liczba bitów
-var (
-	testStarted bool       // Global variable, synchronized via mutex
-	mu          sync.Mutex // Mutex for thread-safe access to testStarted
-)
 
 func main() {
 	config := loadConfig()
@@ -73,8 +69,6 @@ func algTest(w http.ResponseWriter, r *http.Request) {
 	}
 	l = int(math.Ceil(math.Log2((payload.B - payload.A) / payload.D)))
 
-	testStarted = true
-
 	statsMap, successSum := runTest(payload)
 	sortedMap, percentages := prepareMap(statsMap, successSum)
 	rsp := &TestResponse{
@@ -87,26 +81,6 @@ func algTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("błąd przy encodingu odpowiedzi: %s", err), http.StatusInternalServerError)
 	}
 }
-func prepareMap(m map[int]int, totalIterations int) (map[int]int, map[int]float64) {
-	keys := make([]int, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	sorted := make(map[int]int, len(m))
-	percentages := make(map[int]float64, len(m))
-	var percentSum float64 = 0
-
-	for _, k := range keys {
-		sorted[k] = m[k]
-		percentages[k] = float64(m[k]) / float64(totalIterations)
-		percentSum += percentages[k]
-	}
-
-	percentages[0] = 0.0
-	return sorted, percentages
-}
 
 func runTest(data *CalculationPayload) (map[int]int, int) {
 	const funcMaximum = 1.9960228398204862
@@ -115,6 +89,7 @@ func runTest(data *CalculationPayload) (map[int]int, int) {
 	statsMap := make(map[int]int)
 	statsMapMutex := sync.Mutex{}
 
+	// funkcja do obliczenia pojedynczej iteracji testu
 	worker := func() {
 		defer wg.Done()
 		local := false
@@ -143,6 +118,7 @@ func runTest(data *CalculationPayload) (map[int]int, int) {
 					local = true
 				}
 			}
+			// inkrementacja w przypadku sukcesu
 			if vc.Fx >= funcMaximum {
 				statsMapMutex.Lock()
 				statsMap[i] += 1
@@ -152,6 +128,7 @@ func runTest(data *CalculationPayload) (map[int]int, int) {
 		}
 	}
 
+	// uruchamianie testu w różnych wątkach
 	for i := 1; i <= 1000; i++ {
 		wg.Add(1)
 		go worker()
@@ -240,7 +217,6 @@ func generateBestNeighbor(a, b, d float64, vc string) *Vn {
 			newBin[i] = '1'
 		}
 		xReal := intToReal(binToInt(string(newBin)), a, b)
-		// Round the XReal value to the nearest multiple of d
 		xReal = roundToNearest(xReal, d)
 		newV := &Vn{
 			XReal: xReal,
@@ -255,11 +231,31 @@ func generateBestNeighbor(a, b, d float64, vc string) *Vn {
 	return &bestNeigh
 }
 
+func prepareMap(m map[int]int, totalIterations int) (map[int]int, map[int]float64) {
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	sorted := make(map[int]int, len(m))
+	percentages := make(map[int]float64, len(m))
+	var percentSum float64 = 0
+
+	for _, k := range keys {
+		sorted[k] = m[k]
+		percentages[k] = float64(m[k]) / float64(totalIterations)
+		percentSum += percentages[k]
+	}
+
+	percentages[0] = 0.0
+	return sorted, percentages
+}
+
 func roundToNearest(value, step float64) float64 {
 	return math.Round(value/step) * step
 }
 
-// konwersje liczb
 func realToInt(x, a, b float64) int {
 	return int((x - a) / (b - a) * (math.Pow(2, float64(l)) - 1))
 }
