@@ -50,30 +50,33 @@ async function algTest() {
 
 function generateStatsTable(data) {
     const statsMap = data.stats_map;  
-    const percentages = data.percentages
-    const tableBody = document.getElementById('test-table-body')
+    const percentages = data.percentages;
+    const tableBody = document.getElementById('test-table-body');
 
     tableBody.innerHTML = '';
 
     const row = document.createElement("tr");
 
     const fullWidthCell = document.createElement("td");
-    fullWidthCell.colSpan = 5;  
-    fullWidthCell.innerText = `Spośród 1000 prób sukces osiągnęło ${data.success_sum}`;
-    
+    fullWidthCell.colSpan = 5;
+    const successPercent = (data.success_sum / 1000) * 100;
+    fullWidthCell.innerText = `Spośród 1000 prób sukces osiągnęło ${data.success_sum}, co daje ${successPercent.toFixed(2)}% skuteczności programu.`;
+
     row.appendChild(fullWidthCell);
     tableBody.appendChild(row);
 
+    // Convert statsMap to an array of entries and sort based on success count
+    const sortedStats = Object.entries(statsMap).sort((a, b) => b[1] - a[1]);
 
-    for (let iteration in statsMap) {
+    for (let [iteration, successCount] of sortedStats) {
         const row = document.createElement("tr");
         const iterationCell = document.createElement("td");
         const successCountCell = document.createElement("td");
         const percentageCell = document.createElement("td");
 
-        iterationCell.textContent = iteration; 
-        successCountCell.textContent = statsMap[iteration]; 
-        percentageCell.textContent = (percentages[iteration] * 100).toFixed(3); 
+        iterationCell.textContent = iteration;
+        successCountCell.textContent = successCount;
+        percentageCell.textContent = (percentages[iteration] * 100).toFixed(3);
 
         row.appendChild(iterationCell);
         row.appendChild(percentageCell);
@@ -81,6 +84,7 @@ function generateStatsTable(data) {
         tableBody.appendChild(row);
     }
 }
+
 
 function generateTestChart(data) {
     const percentages = data.percentages;  
@@ -213,7 +217,7 @@ function generateChart(data) {
     const ctx = document.getElementById("myChart").getContext("2d");
 
     const IterationStepsDatasets = stepsByIteration.map((steps, index) => ({
-        label: `Vc przy t = ${index}`,
+        label: `Vc przy t = ${index+1}`,
         data: steps,
         borderColor: "rgba(0, 0, 255, 0.5)",
         showLine: true,

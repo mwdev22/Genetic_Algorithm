@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -18,12 +15,12 @@ type Config struct {
 }
 
 func loadConfig() Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("błąd przy ładowaniu zmiennych środowiskowych")
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// log.Fatalf("błąd przy ładowaniu zmiennych środowiskowych")
+	// }
 
-	isProduction := os.Getenv("MODE") == "PRODUCTION"
+	isProduction := true
 	addr := os.Getenv("ADDR")
 	port := os.Getenv("PORT")
 
@@ -47,7 +44,13 @@ func initializeRouter(config *Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	fs := http.FileServer(http.Dir(config.staticPath))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	staticHandler := http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		fs.ServeHTTP(w, r)
+	}))
+	mux.Handle("/static/", staticHandler)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
@@ -55,6 +58,7 @@ func initializeRouter(config *Config) *http.ServeMux {
 		w.Header().Set("Expires", "0")
 		http.ServeFile(w, r, config.indexPath)
 	})
+
 	mux.HandleFunc("/calculate", calculate)
 	mux.HandleFunc("/alg_test", algTest)
 
@@ -80,7 +84,7 @@ func modeName(isProduction bool) string {
 // restrykcja ścieżek
 func restrictPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		allowedPaths := []string{"/", "/calculate", "/static/", "/selection", "/mutation", "/crossover", "/alg_test"}
+		allowedPaths := []string{"/", "/calculate", "/static/", "/alg_test"}
 		for _, path := range allowedPaths {
 			if r.URL.Path == path || (path == "/static/" && r.URL.Path[:8] == "/static/") {
 				next.ServeHTTP(w, r)
